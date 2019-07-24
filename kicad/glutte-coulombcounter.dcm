@@ -1,0 +1,19 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP CSTNE16M0V530000R0
+D Three pin ceramic resonator
+K Ceramic Resonator
+F ~
+$ENDCMP
+#
+$CMP LT3433
+D 4V-60V Step-Up/Down DC/DC Converter
+K DC/DC converter
+$ENDCMP
+#
+$CMP LTC2400
+D 24-bit Sigma-Delta ADC
+K ADC
+$ENDCMP
+#
+#End Doc Library

@@ -1,0 +1,3 @@
+(sym_lib_table
+  (lib (name glutte-coulombcounter)(type Legacy)(uri ${KIPRJMOD}/glutte-coulombcounter.lib)(options "")(descr ""))
+)
