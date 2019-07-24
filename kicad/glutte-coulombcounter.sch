@@ -537,7 +537,7 @@ $EndComp
 Wire Wire Line
 	5600 1900 5700 1900
 Text Notes 3200 950  0    50   ~ 0
-TODO:\n* Filter\n* Check DB9 DATA connections\n* Decide DB9 GND connection\n* Check all footprints
+TODO:\n* Filter\n* Check DB9 DATA connections\n* Decide DB9 GND connection\n* Check all footprints\n* Add mounting holes
 Text Label 7700 1350 2    50   ~ 0
 SSn
 Wire Wire Line
@@ -1782,4 +1782,52 @@ F 3 "http://www.vishay.com/docs/88946/b120.pdf" H 4300 6300 50  0001 C CNN
 	1    4300 6300
 	-1   0    0    1   
 $EndComp
+$Comp
+L Mechanical:MountingHole H2
+U 1 1 5D74A21D
+P 600 800
+F 0 "H2" H 700 846 50  0000 L CNN
+F 1 "M4" H 700 755 50  0000 L CNN
+F 2 "MountingHole:MountingHole_4.3mm_M4" H 600 800 50  0001 C CNN
+F 3 "~" H 600 800 50  0001 C CNN
+	1    600  800 
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mechanical:MountingHole H1
+U 1 1 5D748F1E
+P 600 600
+F 0 "H1" H 700 646 50  0000 L CNN
+F 1 "M4" H 700 555 50  0000 L CNN
+F 2 "MountingHole:MountingHole_4.3mm_M4" H 600 600 50  0001 C CNN
+F 3 "~" H 600 600 50  0001 C CNN
+	1    600  600 
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mechanical:MountingHole H3
+U 1 1 5D752FEA
+P 950 600
+F 0 "H3" H 1050 646 50  0000 L CNN
+F 1 "M4" H 1050 555 50  0000 L CNN
+F 2 "MountingHole:MountingHole_4.3mm_M4" H 950 600 50  0001 C CNN
+F 3 "~" H 950 600 50  0001 C CNN
+	1    950  600 
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mechanical:MountingHole H4
+U 1 1 5D753140
+P 950 800
+F 0 "H4" H 1050 846 50  0000 L CNN
+F 1 "M4" H 1050 755 50  0000 L CNN
+F 2 "MountingHole:MountingHole_4.3mm_M4" H 950 800 50  0001 C CNN
+F 3 "~" H 950 800 50  0001 C CNN
+	1    950  800 
+	1    0    0    -1  
+$EndComp
+Text Label 1600 1800 0    50   ~ 0
+SHUNT+
+Text Label 1600 1900 0    50   ~ 0
+SHUNT-
 $EndSCHEMATC
