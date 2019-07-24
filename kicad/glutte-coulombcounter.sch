@@ -1197,7 +1197,7 @@ U 1 1 5D4B3FB4
 P 6650 4600
 F 0 "U6" H 6650 4967 50  0000 C CNN
 F 1 "LM324" H 6650 4876 50  0000 C CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 6600 4700 50  0001 C CNN
+F 2 "Package_SO:SOIC-14_3.9x8.7mm_P1.27mm" H 6600 4700 50  0001 C CNN
 F 3 "http://www.ti.com/lit/ds/symlink/lm2902-n.pdf" H 6700 4800 50  0001 C CNN
 	1    6650 4600
 	1    0    0    -1  
@@ -1208,7 +1208,7 @@ U 2 1 5D4B52FF
 P 6650 5850
 F 0 "U6" H 6650 6217 50  0000 C CNN
 F 1 "LM324" H 6650 6126 50  0000 C CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 6600 5950 50  0001 C CNN
+F 2 "Package_SO:SOIC-14_3.9x8.7mm_P1.27mm" H 6600 5950 50  0001 C CNN
 F 3 "http://www.ti.com/lit/ds/symlink/lm2902-n.pdf" H 6700 6050 50  0001 C CNN
 	2    6650 5850
 	1    0    0    -1  
@@ -1219,7 +1219,7 @@ U 3 1 5D4B6B38
 P 6450 6800
 F 0 "U6" H 6450 7167 50  0000 C CNN
 F 1 "LM324" H 6450 7076 50  0000 C CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 6400 6900 50  0001 C CNN
+F 2 "Package_SO:SOIC-14_3.9x8.7mm_P1.27mm" H 6400 6900 50  0001 C CNN
 F 3 "http://www.ti.com/lit/ds/symlink/lm2902-n.pdf" H 6500 7000 50  0001 C CNN
 	3    6450 6800
 	1    0    0    -1  
@@ -1230,7 +1230,7 @@ U 4 1 5D4B7D78
 P 6450 7500
 F 0 "U6" H 6450 7867 50  0000 C CNN
 F 1 "LM324" H 6450 7776 50  0000 C CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 6400 7600 50  0001 C CNN
+F 2 "Package_SO:SOIC-14_3.9x8.7mm_P1.27mm" H 6400 7600 50  0001 C CNN
 F 3 "http://www.ti.com/lit/ds/symlink/lm2902-n.pdf" H 6500 7700 50  0001 C CNN
 	4    6450 7500
 	1    0    0    -1  
@@ -1241,7 +1241,7 @@ U 5 1 5D4B87AB
 P 7300 5200
 F 0 "U6" H 7258 5246 50  0000 L CNN
 F 1 "LM324" H 7258 5155 50  0000 L CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 7250 5300 50  0001 C CNN
+F 2 "Package_SO:SOIC-14_3.9x8.7mm_P1.27mm" H 7250 5300 50  0001 C CNN
 F 3 "http://www.ti.com/lit/ds/symlink/lm2902-n.pdf" H 7350 5400 50  0001 C CNN
 	5    7300 5200
 	1    0    0    -1  
