@@ -1,5 +1,6 @@
 EESchema Schematic File Version 4
-EELAYER 29 0
+LIBS:glutte-coulombcounter-cache
+EELAYER 30 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -536,8 +537,8 @@ F 3 "" H 5700 1900 50  0001 C CNN
 $EndComp
 Wire Wire Line
 	5600 1900 5700 1900
-Text Notes 3200 950  0    50   ~ 0
-TODO:\n* Filter\n* Check DB9 DATA connections\n* Decide DB9 GND connection\n* Check all footprints\n* Add mounting holes
+Text Notes 3000 1150 0    50   ~ 0
+TODO:\n* Filtre entre AD6210 et LTC2400\n* Decider combien de sorties relais et les ajouter\n* Decider comment connecter a la logique\n* Check DB9 DATA connections\n* Decider DB9 GND connection\n* Check all footprints\n* Check LTC2400 bootstrap (serial clock mode)
 Text Label 7700 1350 2    50   ~ 0
 SSn
 Wire Wire Line
@@ -615,7 +616,7 @@ Wire Notes Line
 Text Notes 600  4200 0    100  ~ 0
 POWER
 Text Notes 3050 4400 0    50   ~ 0
-5V Reference
+5V Reference ADC
 $Comp
 L glutte-coulombcounter:LT3433 U3
 U 1 1 5D3E094B
@@ -1002,7 +1003,7 @@ Wire Wire Line
 Text GLabel 9200 1100 1    50   Input ~ 0
 VREF
 Text Notes 3050 5450 0    50   ~ 0
-5V Power supply
+5V Alimentation
 Wire Notes Line
 	5400 7700 550  7700
 Wire Notes Line
@@ -1327,7 +1328,7 @@ Connection ~ 5900 5750
 Text Notes 5800 3650 0    100  ~ 0
 V BAT MEASURE
 Text Notes 5800 3850 0    50   ~ 0
-Divide by 4 voltage divider\nLM324 clamps to 5V to protect ATMega
+Diviseur tension facteur=4\nLM324 limite max 5V protection ATMega
 Wire Notes Line
 	7550 3500 7550 6350
 Wire Notes Line
@@ -1542,39 +1543,39 @@ NoConn ~ 10600 5950
 Text Notes 9950 4100 0    50   ~ 0
 TTL to RS232 level conversion\n
 $Comp
-L ardu-power-meter:DS18B20 U1
+L Sensor_Temperature:DS18B20 U1
 U 1 1 5D629894
-P 1250 3250
-F 0 "U1" H 1020 3296 50  0000 R CNN
-F 1 "DS18B20" H 1020 3205 50  0000 R CNN
-F 2 "Package_TO_SOT_THT:TO-92_Inline" H 250 3000 50  0001 C CNN
-F 3 "http://datasheets.maximintegrated.com/en/ds/DS18B20.pdf" H 1100 3500 50  0001 C CNN
-	1    1250 3250
+P 1250 3400
+F 0 "U1" H 1020 3446 50  0000 R CNN
+F 1 "DS18B20" H 1020 3355 50  0000 R CNN
+F 2 "Package_TO_SOT_THT:TO-92_Inline" H 250 3150 50  0001 C CNN
+F 3 "http://datasheets.maximintegrated.com/en/ds/DS18B20.pdf" H 1100 3650 50  0001 C CNN
+	1    1250 3400
 	1    0    0    -1  
 $EndComp
 $Comp
 L power:GNDA #PWR02
 U 1 1 5D62AC3D
-P 1250 3550
-F 0 "#PWR02" H 1250 3300 50  0001 C CNN
-F 1 "GNDA" H 1255 3377 50  0000 C CNN
-F 2 "" H 1250 3550 50  0001 C CNN
-F 3 "" H 1250 3550 50  0001 C CNN
-	1    1250 3550
+P 1250 3700
+F 0 "#PWR02" H 1250 3450 50  0001 C CNN
+F 1 "GNDA" H 1255 3527 50  0000 C CNN
+F 2 "" H 1250 3700 50  0001 C CNN
+F 3 "" H 1250 3700 50  0001 C CNN
+	1    1250 3700
 	1    0    0    -1  
 $EndComp
 $Comp
 L power:+5VA #PWR01
 U 1 1 5D62AEDD
-P 1250 2950
-F 0 "#PWR01" H 1250 2800 50  0001 C CNN
-F 1 "+5VA" H 1265 3123 50  0000 C CNN
-F 2 "" H 1250 2950 50  0001 C CNN
-F 3 "" H 1250 2950 50  0001 C CNN
-	1    1250 2950
+P 1250 3100
+F 0 "#PWR01" H 1250 2950 50  0001 C CNN
+F 1 "+5VA" H 1265 3273 50  0000 C CNN
+F 2 "" H 1250 3100 50  0001 C CNN
+F 3 "" H 1250 3100 50  0001 C CNN
+	1    1250 3100
 	1    0    0    -1  
 $EndComp
-Text Label 1550 3250 0    50   ~ 0
+Text Label 1550 3400 0    50   ~ 0
 1WIRE
 $Comp
 L Device:R R11
@@ -1830,4 +1831,22 @@ Text Label 1600 1800 0    50   ~ 0
 SHUNT+
 Text Label 1600 1900 0    50   ~ 0
 SHUNT-
+Text Notes 1750 3250 0    100  ~ 0
+MESURE TEMPERATURE
+Text Notes 1850 3350 0    50   ~ 0
+Dans le bac des batteries\n
+Wire Notes Line
+	550  3950 3500 3950
+Wire Notes Line
+	3500 3950 3500 2850
+Wire Notes Line
+	3500 2850 550  2850
+Wire Notes Line
+	550  2850 550  3950
+Wire Bus Line
+	600  2000 600  2100
+Wire Bus Line
+	550  2050 650  2050
+Text Notes 10500 800  0    50   ~ 0
+Programmation\nATMega
 $EndSCHEMATC
