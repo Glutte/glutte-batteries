@@ -6,7 +6,7 @@ $Descr A4 11693 8268
 encoding utf-8
 Sheet 2 3
 Title "Coulomb meter for Glutte Battery"
-Date "2019-09-09"
+Date "2019-10-18"
 Rev ""
 Comp "HB9EGM"
 Comment1 ""

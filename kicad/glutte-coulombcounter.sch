@@ -6,7 +6,7 @@ $Descr A4 11693 8268
 encoding utf-8
 Sheet 1 3
 Title "Coulomb meter for Glutte Battery"
-Date "2019-09-09"
+Date "2019-10-18"
 Rev ""
 Comp "HB9EGM"
 Comment1 ""
@@ -522,7 +522,7 @@ $EndComp
 Wire Wire Line
 	5600 1900 5700 1900
 Text Notes 3000 1150 0    50   ~ 0
-TODO:\n* Filtre entre AD8210 et LTC2400\n* Decider combien de sorties relais et les ajouter\n* Check DB9 DATA connections\n* Decider DB9 GND connection\n* Check all footprints\n* Check LTC2400 bootstrap (serial clock mode)
+TODO:\n* Filtre entre AD8210 et LTC2400\n* Decider DB9 GND connection\n* Check all footprints
 Text Label 7700 1350 2    50   ~ 0
 SSn
 Wire Wire Line
@@ -937,16 +937,16 @@ F 3 "" H 9050 6350 50  0001 C CNN
 	1    9050 6350
 	1    0    0    -1  
 $EndComp
-Text Label 8250 5650 2    50   ~ 0
+Text Label 7950 5750 2    50   ~ 0
 RXD
-Text Label 8250 5250 2    50   ~ 0
+Text Label 8250 5350 2    50   ~ 0
 TXD
 $Comp
 L Device:CP1 C18
 U 1 1 5D5C51E2
 P 10000 4750
 F 0 "C18" V 10050 4900 50  0000 C CNN
-F 1 "1u" V 10161 4750 50  0000 C CNN
+F 1 "1u" V 10050 4650 50  0000 C CNN
 F 2 "Capacitor_SMD:C_1206_3216Metric_Pad1.42x1.75mm_HandSolder" H 10000 4750 50  0001 C CNN
 F 3 "~" H 10000 4750 50  0001 C CNN
 	1    10000 4750
@@ -956,8 +956,8 @@ $Comp
 L Device:CP1 C19
 U 1 1 5D5C5B10
 P 10000 5050
-F 0 "C19" V 10160 5050 50  0000 C CNN
-F 1 "1u" V 10251 5050 50  0000 C CNN
+F 0 "C19" V 10050 4900 50  0000 C CNN
+F 1 "1u" V 10050 5150 50  0000 C CNN
 F 2 "Capacitor_SMD:C_1206_3216Metric_Pad1.42x1.75mm_HandSolder" H 10000 5050 50  0001 C CNN
 F 3 "~" H 10000 5050 50  0001 C CNN
 	1    10000 5050
@@ -968,7 +968,7 @@ L power:GNDA #PWR020
 U 1 1 5D5C60F6
 P 10150 4900
 F 0 "#PWR020" H 10150 4650 50  0001 C CNN
-F 1 "GNDA" V 10155 4772 50  0000 R CNN
+F 1 "GNDA" H 10250 4750 50  0000 R CNN
 F 2 "" H 10150 4900 50  0001 C CNN
 F 3 "" H 10150 4900 50  0001 C CNN
 	1    10150 4900
@@ -980,78 +980,33 @@ Connection ~ 10150 4900
 Wire Wire Line
 	10150 4900 10150 5050
 $Comp
-L Connector:DB9_Female J5
-U 1 1 5D5CBD57
-P 10900 5650
-F 0 "J5" H 10900 5150 50  0000 L CNN
-F 1 "DB9_Female" H 10700 5000 50  0000 L CNN
-F 2 "Connector_Dsub:DSUB-9_Female_EdgeMount_P2.77mm" H 10900 5650 50  0001 C CNN
-F 3 " ~" H 10900 5650 50  0001 C CNN
-	1    10900 5650
-	1    0    0    -1  
-$EndComp
-Wire Wire Line
-	9900 5250 9850 5250
-Wire Wire Line
-	10600 5650 9850 5650
-Wire Wire Line
-	9900 5250 9900 5350
-Wire Wire Line
-	9900 5350 10450 5350
-Wire Wire Line
-	10450 5350 10450 5450
-Wire Wire Line
-	10450 5450 10600 5450
-Wire Wire Line
-	10600 5850 10350 5850
-Wire Wire Line
-	10350 5850 10350 5450
-Wire Wire Line
-	10350 5450 9850 5450
-Text Label 8250 5450 2    50   ~ 0
-DTR
-Text Label 7700 3050 2    50   ~ 0
-DTR
-$Comp
 L power:GNDA #PWR021
 U 1 1 5D5EDAB4
-P 10300 6050
-F 0 "#PWR021" H 10300 5800 50  0001 C CNN
-F 1 "GNDA" V 10305 5923 50  0000 R CNN
-F 2 "" H 10300 6050 50  0001 C CNN
-F 3 "" H 10300 6050 50  0001 C CNN
-	1    10300 6050
-	0    1    1    0   
+P 10900 5000
+F 0 "#PWR021" H 10900 4750 50  0001 C CNN
+F 1 "GNDA" H 11000 4850 50  0000 R CNN
+F 2 "" H 10900 5000 50  0001 C CNN
+F 3 "" H 10900 5000 50  0001 C CNN
+	1    10900 5000
+	0    -1   -1   0   
 $EndComp
 $Comp
 L Device:Ferrite_Bead FB1
 U 1 1 5D5EE95A
-P 10450 6050
-F 0 "FB1" V 10268 6050 50  0000 C CNN
-F 1 "DNF" V 10177 6050 50  0000 C CNN
-F 2 "Resistor_SMD:R_1206_3216Metric_Pad1.42x1.75mm_HandSolder" V 10380 6050 50  0001 C CNN
-F 3 "~" H 10450 6050 50  0001 C CNN
-	1    10450 6050
-	0    -1   -1   0   
+P 10750 5000
+F 0 "FB1" V 10568 5000 50  0000 C CNN
+F 1 "DNF" V 10800 5100 50  0000 C CNN
+F 2 "Resistor_SMD:R_1206_3216Metric_Pad1.42x1.75mm_HandSolder" V 10680 5000 50  0001 C CNN
+F 3 "~" H 10750 5000 50  0001 C CNN
+	1    10750 5000
+	0    1    1    0   
 $EndComp
-Wire Wire Line
-	10600 5350 10500 5350
-Wire Wire Line
-	10500 5350 10500 5750
-Wire Wire Line
-	10500 5750 9850 5750
-Wire Wire Line
-	9850 5750 9850 5850
-Text Label 8250 5850 2    50   ~ 0
-DSR
-Text Label 7700 3150 2    50   ~ 0
-DSR
-NoConn ~ 10600 5250
+NoConn ~ 10600 6050
 NoConn ~ 10600 5550
 NoConn ~ 10600 5750
 NoConn ~ 10600 5950
-Text Notes 9950 4100 0    50   ~ 0
-TTL to RS232 level conversion\n
+Text Notes 9500 3500 0    50   ~ 0
+TTL to RS232 level conversion\nDeux ports: glutte + raspi\nDTE usually male, DCE female\nrelay front is a DCE
 $Comp
 L Sensor_Temperature:DS18B20 U1
 U 1 1 5D629894
@@ -1331,9 +1286,9 @@ F6 "K3_RESET" I R 6700 3050 50
 F7 "K3_SET" I R 6700 3150 50 
 $EndSheet
 Wire Wire Line
-	7700 2450 7100 2450
+	7700 2450 6900 2450
 Wire Wire Line
-	7150 2550 7700 2550
+	6950 2550 7700 2550
 Wire Wire Line
 	6350 2350 6200 2350
 Connection ~ 6200 2350
@@ -1350,23 +1305,131 @@ Wire Wire Line
 Wire Wire Line
 	6850 2350 7700 2350
 Wire Wire Line
-	7100 3300 6700 3300
+	6900 3300 6700 3300
 Wire Wire Line
-	7100 2450 7100 3300
+	6900 2450 6900 3300
 Wire Wire Line
-	7150 3400 6700 3400
+	6950 3400 6700 3400
 Wire Wire Line
-	7150 2550 7150 3400
+	6950 2550 6950 3400
 Wire Wire Line
-	7700 3350 7200 3350
+	7700 3350 7000 3350
 Wire Wire Line
-	7200 3350 7200 3550
+	7000 3350 7000 3550
 Wire Wire Line
-	7200 3550 6700 3550
+	7000 3550 6700 3550
 Wire Wire Line
-	7700 3450 7250 3450
+	7700 3450 7050 3450
 Wire Wire Line
-	7250 3450 7250 3650
+	7050 3450 7050 3650
 Wire Wire Line
-	7250 3650 6700 3650
+	7050 3650 6700 3650
+Text Notes 3800 3550 0    50   ~ 0
+Max Rshunt defined by max Vout\nIshunt < 100A\nVout=Ishunt*Rshunt*20 < 5V\nRshunt < 5/20/100 = 25 mOhm\n\nMax Rshunt defined by max power dissipation\nPshunt=Rshunt * Ishunt^2 < 5W\nRshunt < 5/10000 = 5 mOhm
+$Comp
+L Connector:DB9_Male J5
+U 1 1 5DAA2A3E
+P 10900 5650
+F 0 "J5" H 11080 5696 50  0000 L CNN
+F 1 "Glutte" H 10800 5000 50  0000 L CNN
+F 2 "Connector_Dsub:DSUB-9_Male_EdgeMount_P2.77mm" H 10900 5650 50  0001 C CNN
+F 3 " ~" H 10900 5650 50  0001 C CNN
+	1    10900 5650
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	8250 5450 8250 5250
+$Comp
+L Device:R R15
+U 1 1 5DAAFEE0
+P 8100 5850
+F 0 "R15" V 7985 5850 50  0000 C CNN
+F 1 "DNF" V 7894 5850 50  0000 C CNN
+F 2 "Resistor_SMD:R_1206_3216Metric_Pad1.42x1.75mm_HandSolder" V 8030 5850 50  0001 C CNN
+F 3 "~" H 8100 5850 50  0001 C CNN
+	1    8100 5850
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:R R14
+U 1 1 5DAB112C
+P 8100 5650
+F 0 "R14" V 8307 5650 50  0000 C CNN
+F 1 "0R" V 8216 5650 50  0000 C CNN
+F 2 "Resistor_SMD:R_1206_3216Metric_Pad1.42x1.75mm_HandSolder" V 8030 5650 50  0001 C CNN
+F 3 "~" H 8100 5650 50  0001 C CNN
+	1    8100 5650
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	7950 5650 7950 5850
+Wire Wire Line
+	9850 5650 10500 5650
+NoConn ~ 10600 5450
+NoConn ~ 10600 5350
+$Comp
+L Connector:DB9_Male J8
+U 1 1 5DAD14DC
+P 10900 4150
+F 0 "J8" H 11080 4196 50  0000 L CNN
+F 1 "Raspi" H 10800 3600 50  0000 L CNN
+F 2 "Connector_Dsub:DSUB-9_Male_EdgeMount_P2.77mm" H 10900 4150 50  0001 C CNN
+F 3 " ~" H 10900 4150 50  0001 C CNN
+	1    10900 4150
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:Ferrite_Bead FB2
+U 1 1 5DAD27A3
+P 10450 3750
+F 0 "FB2" V 10268 3750 50  0000 C CNN
+F 1 "DNF" V 10500 3850 50  0000 C CNN
+F 2 "Resistor_SMD:R_1206_3216Metric_Pad1.42x1.75mm_HandSolder" V 10380 3750 50  0001 C CNN
+F 3 "~" H 10450 3750 50  0001 C CNN
+	1    10450 3750
+	0    -1   -1   0   
+$EndComp
+$Comp
+L power:GNDA #PWR026
+U 1 1 5DAD2A21
+P 10300 3750
+F 0 "#PWR026" H 10300 3500 50  0001 C CNN
+F 1 "GNDA" V 10305 3623 50  0000 R CNN
+F 2 "" H 10300 3750 50  0001 C CNN
+F 3 "" H 10300 3750 50  0001 C CNN
+	1    10300 3750
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	10600 5000 10600 5250
+Wire Wire Line
+	10600 5650 10550 5650
+Wire Wire Line
+	10550 5650 10550 5250
+Wire Wire Line
+	9850 5250 10550 5250
+Wire Wire Line
+	10500 5650 10500 5850
+Wire Wire Line
+	10500 5850 10600 5850
+Wire Wire Line
+	9850 5850 10450 5850
+Wire Wire Line
+	10450 5850 10450 4350
+Wire Wire Line
+	10450 4350 10600 4350
+Wire Wire Line
+	9850 5450 10400 5450
+Wire Wire Line
+	10400 5450 10400 4150
+Wire Wire Line
+	10400 4150 10600 4150
+NoConn ~ 10600 4550
+NoConn ~ 10600 4450
+NoConn ~ 10600 4250
+NoConn ~ 10600 4050
+NoConn ~ 10600 3950
+NoConn ~ 10600 3850
+NoConn ~ 7700 3050
+NoConn ~ 7700 3150
 $EndSCHEMATC
