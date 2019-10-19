@@ -42,3 +42,13 @@ Reglages eFuse
 - Ext: Brownout detector: 4.3V
 
 Commande AVRdude equivalente: `-U lfuse:w:0x50:m -U hfuse:w:0xd9:m -U efuse:w:0xfc:m`
+
+Acknowledgements
+================
+
+Le dossier `lib/` contient des fichiers des bibliotheques suivantes:
+
+- OneWire https://github.com/PaulStoffregen/OneWire
+- DallasTemperature https://github.com/milesburton/Arduino-Temperature-Control-Library.git
+- avr-uart https://github.com/andygock/avr-uart
+- Code exemple LTC2400 de l'application note correspondante
