@@ -29,11 +29,12 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <avr/sleep.h>
+#include <avr/eeprom.h>
 
 // Definitions allocation pin
 #define PIN(x) (1 << x)
 
-/* ALL relay signals PINx_Kx have external pulldown.
+/* All relay signals PINx_Kx have external pulldown.
  * All pins whose name ends in 'n' are active low */
 
 // PORT B
@@ -73,6 +74,16 @@ constexpr uint8_t PIND_OUTPUTS =
     PIND_UART_TX |
     PIND_K1_RESET | PIND_K1_SET;
 
+/* Storage of battery capacity in mC.
+ * 3600 mC = 1mAh */
+
+/* Store the capacity three times in EEPROM, and check data validity using majority vote */
+uint32_t EEMEM stored_capacity1;
+uint32_t EEMEM stored_capacity2;
+uint32_t EEMEM stored_capacity3;
+uint32_t last_store_time; /* In seconds */
+
+uint32_t current_capacity;
 
 /* Assuming F_CPU at 16MHz / 8:
  *
@@ -83,11 +94,70 @@ constexpr uint8_t PIND_OUTPUTS =
  * interval [s] = overflow [ticks] / (F_CPU [ticks/s] / prescaler [unit-less])
  *              = 99.84 ms
  */
-volatile uint8_t timer_counter; /* Timer */
+volatile uint8_t timer_counter; /* Timer in 100ms steps */
+volatile uint32_t timer_seconds; /* Timer in seconds */
 
 ISR(TIMER0_COMPA_vect)
 {
     timer_counter++;
+
+    if (timer_counter >= 10) {
+        timer_seconds++;
+        timer_counter = 0;
+    }
+}
+
+enum class error_type_t {
+    EEPROM_READ_WARNING,
+    EEPROM_READ_ERROR,
+    EEPROM_WRITE_ERROR,
+};
+
+static void flag_error(error_type_t e) {
+    // TODO output error
+}
+
+static void load_capacity_from_eeprom()
+{
+    uint32_t cap1 = eeprom_read_dword(&stored_capacity1);
+    uint32_t cap2 = eeprom_read_dword(&stored_capacity2);
+    uint32_t cap3 = eeprom_read_dword(&stored_capacity3);
+
+    if (cap1 == cap2 and cap2 == cap3) {
+        current_capacity = cap1;
+    }
+    else if (cap1 == cap2) {
+        flag_error(error_type_t::EEPROM_READ_WARNING);
+        current_capacity = cap1;
+        eeprom_write_dword(&stored_capacity3, cap1);
+    }
+    else if (cap1 == cap3) {
+        flag_error(error_type_t::EEPROM_READ_WARNING);
+        current_capacity = cap1;
+        eeprom_write_dword(&stored_capacity2, cap1);
+    }
+    else if (cap2 == cap3) {
+        flag_error(error_type_t::EEPROM_READ_WARNING);
+        current_capacity = cap2;
+        eeprom_write_dword(&stored_capacity1, cap1);
+    }
+    else {
+        flag_error(error_type_t::EEPROM_READ_ERROR);
+        current_capacity = cap2; // arbitrary
+    }
+}
+
+static void store_capacity_to_eeprom()
+{
+    eeprom_write_dword(&stored_capacity1, current_capacity);
+    eeprom_write_dword(&stored_capacity2, current_capacity);
+    eeprom_write_dword(&stored_capacity3, current_capacity);
+
+    if (eeprom_read_dword(&stored_capacity1) != current_capacity or
+        eeprom_read_dword(&stored_capacity2) != current_capacity or
+        eeprom_read_dword(&stored_capacity3) != current_capacity) {
+        flag_error(error_type_t::EEPROM_WRITE_ERROR);
+    }
 }
 
 int main()
@@ -104,19 +174,28 @@ int main()
     DDRD = PIND_OUTPUTS;
 
     /* Setup 100Hz timer */
+    timer_seconds = 0;
+    timer_counter = 0;
     TCCR0B |= (1 << WGM02); // Set timer mode to CTC (datasheet 15.7.2)
     TIMSK0 |= (1 << TOIE0); // enable overflow interrupt
     OCR0A = (uint8_t)(F_CPU / 1024 / 10); // Overflow at 99.84 ms
     TCCR0B |= (1 << CS02) | (1 << CS00); // Start timer at Fcpu/1024
+
+    /* Load capacity stored in EEPROM */
+    load_capacity_from_eeprom();
+    last_store_time = timer_seconds;
 
     /* Enable interrupts */
     sei();
 
     /* Put the CPU to sleep */
     set_sleep_mode(SLEEP_MODE_IDLE);
-    sleep_enable();
     while (true) {
-        sleep_cpu();
+        sleep_mode();
+
+        if (last_store_time + 3600 * 5 >= timer_seconds) {
+            store_capacity_to_eeprom();
+        }
     }
 
     return 0;
