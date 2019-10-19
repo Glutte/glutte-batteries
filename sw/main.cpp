@@ -30,6 +30,7 @@
 #include <avr/interrupt.h>
 #include <avr/sleep.h>
 #include <avr/eeprom.h>
+#include <avr/wdt.h>
 
 // Definitions allocation pin
 #define PIN(x) (1 << x)
@@ -97,6 +98,10 @@ uint32_t current_capacity;
 volatile uint8_t timer_counter; /* Timer in 100ms steps */
 volatile uint32_t timer_seconds; /* Timer in seconds */
 
+/* At reset, save the mcusr register to find out why we got reset.
+ * Datasheet 11.9.1, example code from wdt.h */
+uint8_t mcusr_mirror __attribute__ ((section (".noinit")));
+
 ISR(TIMER0_COMPA_vect)
 {
     timer_counter++;
@@ -162,6 +167,14 @@ static void store_capacity_to_eeprom()
 
 int main()
 {
+    /* Save the reset source for debugging, then enable the watchdog.
+     * Attention: WDT may be already enabled if it triggered a reset!
+     * Datasheet 11.8.2 */
+    mcusr_mirror = MCUSR;
+    MCUSR = 0;
+    wdt_reset();
+    wdt_enable(WDTO_4S);
+
     /* Setup GPIO */
     // Active-low outputs must be high
     PORTB = PINB_STATUSn | PINB_SPI_LTC_CSn;
