@@ -14,6 +14,25 @@ Proposition
 Mesurer le courant à intervalle régulier (p.ex. à 10Hz) et intégrer le courant
 pour calculer une charge accumulée ou extraite de la batterie (A * s = Coulomb).
 
+Besoins
+-------
+
+Quand le niveau de charge des batteries est trop bas, il faut couper des
+consommateurs. Il est possible de commuter les groupes de consommateurs suivants:
+
+- Balise 70cm
+- Mode relais QRP/QRO
+- Alimentation Relais
+- Alimentation Raspberry Pi, WiFi et autres consommateurs 5V restants
+
+Afin que le relais puisse indiquer le niveau de charge, un port série est
+utilisé entre le coulomb-mètre et la glutt-o-matique (unidirectionnel). Pour la
+surveillance ainsi que pour d'autres applications, un deuxième port série transmet
+les mêmes informations à un Raspberry Pi connecté à Internet.
+
+Le colomb-mètre doit donc comporter trois commutations à relais, qui peuvent à
+leur tour commuter des relais de puissance.
+
 Quelques définitions
 --------------------
 
