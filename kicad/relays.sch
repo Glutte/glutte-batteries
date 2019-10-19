@@ -105,35 +105,31 @@ F 3 "http://omronfs.omron.com/en_US/ecb/products/pdf/en-g6s.pdf" H 4600 5450 50 
 	1    4900 5450
 	1    0    0    -1  
 $EndComp
-Text HLabel 2800 2300 0    50   Input ~ 0
+Text HLabel 1350 2300 0    50   Input ~ 0
 K1_SET
-Text HLabel 2800 2200 0    50   Input ~ 0
+Text HLabel 1350 2200 0    50   Input ~ 0
 K1_RESET
-Text HLabel 2800 2400 0    50   Input ~ 0
+Text HLabel 1350 2400 0    50   Input ~ 0
 K2_RESET
-Text HLabel 2800 2500 0    50   Input ~ 0
+Text HLabel 1350 2500 0    50   Input ~ 0
 K2_SET
-Text HLabel 2800 2600 0    50   Input ~ 0
+Text HLabel 1350 2600 0    50   Input ~ 0
 K3_RESET
-Text HLabel 2800 2700 0    50   Input ~ 0
+Text HLabel 1350 2700 0    50   Input ~ 0
 K3_SET
 $Comp
 L power:GNDA #PWR?
 U 1 1 5D96A87D
-P 2650 3000
+P 1500 3200
 AR Path="/5D96A87D" Ref="#PWR?"  Part="1" 
 AR Path="/5D96189F/5D96A87D" Ref="#PWR05"  Part="1" 
-F 0 "#PWR05" H 2650 2750 50  0001 C CNN
-F 1 "GNDA" H 2655 2827 50  0000 C CNN
-F 2 "" H 2650 3000 50  0001 C CNN
-F 3 "" H 2650 3000 50  0001 C CNN
-	1    2650 3000
+F 0 "#PWR05" H 1500 2950 50  0001 C CNN
+F 1 "GNDA" H 1505 3027 50  0000 C CNN
+F 2 "" H 1500 3200 50  0001 C CNN
+F 3 "" H 1500 3200 50  0001 C CNN
+	1    1500 3200
 	1    0    0    -1  
 $EndComp
-Wire Wire Line
-	2800 2800 2650 2800
-Wire Wire Line
-	2650 2800 2650 3000
 NoConn ~ 3600 2800
 Text Notes 4500 1900 0    50   ~ 0
 min 10ms SET/RESET pulse width\nCan switch 2A
@@ -405,4 +401,76 @@ Wire Wire Line
 	3800 5800 5500 5800
 Wire Wire Line
 	5500 5800 5500 5750
+Text Notes 1350 2000 0    50   ~ 0
+ATMega ports are tri-state on RESET
+Wire Wire Line
+	1350 2700 2000 2700
+Wire Wire Line
+	1350 2600 1900 2600
+Wire Wire Line
+	1350 2500 1800 2500
+Wire Wire Line
+	1350 2400 1700 2400
+Wire Wire Line
+	1350 2300 1600 2300
+Wire Wire Line
+	1350 2200 1500 2200
+Wire Wire Line
+	1500 2800 1500 2200
+Connection ~ 1500 2200
+Wire Wire Line
+	1500 2200 2800 2200
+Wire Wire Line
+	1600 2800 1600 2300
+Connection ~ 1600 2300
+Wire Wire Line
+	1600 2300 2800 2300
+Wire Wire Line
+	1700 2800 1700 2400
+Connection ~ 1700 2400
+Wire Wire Line
+	1700 2400 2800 2400
+Wire Wire Line
+	1800 2800 1800 2500
+Connection ~ 1800 2500
+Wire Wire Line
+	1800 2500 2800 2500
+Wire Wire Line
+	1900 2800 1900 2600
+Connection ~ 1900 2600
+Wire Wire Line
+	1900 2600 2800 2600
+Wire Wire Line
+	2000 2800 2000 2700
+Connection ~ 2000 2700
+Wire Wire Line
+	2000 2700 2800 2700
+$Comp
+L power:GNDA #PWR?
+U 1 1 5DB13EA6
+P 2750 2850
+AR Path="/5DB13EA6" Ref="#PWR?"  Part="1" 
+AR Path="/5D96189F/5DB13EA6" Ref="#PWR0133"  Part="1" 
+F 0 "#PWR0133" H 2750 2600 50  0001 C CNN
+F 1 "GNDA" H 2755 2677 50  0000 C CNN
+F 2 "" H 2750 2850 50  0001 C CNN
+F 3 "" H 2750 2850 50  0001 C CNN
+	1    2750 2850
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	2750 2850 2750 2800
+Wire Wire Line
+	2750 2800 2800 2800
+$Comp
+L Device:R_Network06 RN1
+U 1 1 5DB1BAE1
+P 1800 3000
+F 0 "RN1" H 1421 2954 50  0000 R CNN
+F 1 "470R" H 1421 3045 50  0000 R CNN
+F 2 "Resistor_THT:R_Array_SIP7" V 2175 3000 50  0001 C CNN
+F 3 "http://www.vishay.com/docs/31509/csc.pdf" H 1800 3000 50  0001 C CNN
+	1    1800 3000
+	1    0    0    1   
+$EndComp
 $EndSCHEMATC
