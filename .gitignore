@@ -1,0 +1,17 @@
+doc
+sw/build
+sw/lib/DallasTemperature/.gitignore
+sw/lib/*/README.md
+sw/lib/*/examples/
+sw/lib/*/keywords.txt
+sw/lib/*/library.json
+sw/lib/*/library.properties
+sw/lib/*/docs/
+
+kicad/glutte-coulombcounter-cache.lib
+kicad/glutte-coulombcounter.bak
+kicad/glutte-coulombcounter.bck
+kicad/glutte-coulombcounter.kicad_pcb-bak
+kicad/glutte-coulombcounter.sch-bak
+kicad/out/
+kicad/*.sch-bak
