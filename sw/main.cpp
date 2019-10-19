@@ -28,9 +28,96 @@
 #include <avr/pgmspace.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include <avr/sleep.h>
+
+// Definitions allocation pin
+#define PIN(x) (1 << x)
+
+/* ALL relay signals PINx_Kx have external pulldown.
+ * All pins whose name ends in 'n' are active low */
+
+// PORT B
+constexpr uint8_t PINB_STATUSn = PIN(0);
+// Pins 2,3,4,5 = SPI
+constexpr uint8_t PINB_SPI_LTC_CSn = PIN(2); // with external pullup
+constexpr uint8_t PINB_SPI_MOSI = PIN(3);
+constexpr uint8_t PINB_SPI_MISO = PIN(4);
+constexpr uint8_t PINB_SPI_SCK = PIN(5);
+
+constexpr uint8_t PINB_OUTPUTS =
+    PINB_STATUSn | PINB_SPI_SCK | PINB_SPI_MOSI | PINB_SPI_LTC_CSn;
+
+// PORT C
+constexpr uint8_t PINC_ADC0 = PIN(0);
+constexpr uint8_t PINC_ADC1 = PIN(1);
+constexpr uint8_t PINC_K3_RESET = PIN(2);
+constexpr uint8_t PINC_K3_SET = PIN(3);
+constexpr uint8_t PINC_K2_RESET = PIN(4);
+constexpr uint8_t PINC_K2_SET = PIN(5);
+
+constexpr uint8_t PINC_OUTPUTS =
+    PINC_K3_RESET | PINC_K3_SET |
+    PINC_K2_RESET | PINC_K2_SET;
+
+// PORT D
+// Pins 0,1 = UART RX,TX
+constexpr uint8_t PIND_UART_RX = PIN(0);
+constexpr uint8_t PIND_UART_TX = PIN(1);
+
+constexpr uint8_t PIND_ONEWIRE = PIN(4); // with exteral pullup
+
+constexpr uint8_t PIND_K1_RESET = PIN(5);
+constexpr uint8_t PIND_K1_SET = PIN(6);
+
+constexpr uint8_t PIND_OUTPUTS =
+    PIND_UART_TX |
+    PIND_K1_RESET | PIND_K1_SET;
+
+
+/* Assuming F_CPU at 16MHz / 8:
+ *
+ * overflow for 100ms: F_CPU [ticks/s] / prescaler [unit-less] * interval [s] = [ticks/s*s] = [ticks]
+ * interval [s] = 0.1 = 1 / 10
+ *
+ * Actual interval after rounding:
+ * interval [s] = overflow [ticks] / (F_CPU [ticks/s] / prescaler [unit-less])
+ *              = 99.84 ms
+ */
+volatile uint8_t timer_counter; /* Timer */
+
+ISR(TIMER0_COMPA_vect)
+{
+    timer_counter++;
+}
 
 int main()
 {
+    /* Setup GPIO */
+    // Active-low outputs must be high
+    PORTB = PINB_STATUSn | PINB_SPI_LTC_CSn;
+    PORTC = 0;
+    PORTD = 0;
+
+    // Enable output
+    DDRB = PINB_OUTPUTS;
+    DDRC = PINC_OUTPUTS;
+    DDRD = PIND_OUTPUTS;
+
+    /* Setup 100Hz timer */
+    TCCR0B |= (1 << WGM02); // Set timer mode to CTC (datasheet 15.7.2)
+    TIMSK0 |= (1 << TOIE0); // enable overflow interrupt
+    OCR0A = (uint8_t)(F_CPU / 1024 / 10); // Overflow at 99.84 ms
+    TCCR0B |= (1 << CS02) | (1 << CS00); // Start timer at Fcpu/1024
+
+    /* Enable interrupts */
+    sei();
+
+    /* Put the CPU to sleep */
+    set_sleep_mode(SLEEP_MODE_IDLE);
+    sleep_enable();
+    while (true) {
+        sleep_cpu();
+    }
 
     return 0;
 }

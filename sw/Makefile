@@ -13,8 +13,8 @@ PROG = dragon_isp
 PART=atmega328
 AVRDUDE_PART=m328
 
-# Cpu frequency is 16MHz, divider = 2
-F_CPU="(16000000UL/2)"
+# Cpu frequency is 16MHz, divider = 8
+F_CPU="(16000000UL/8)"
 
 # Directory for built objects
 BUILD_DIR=build
@@ -47,6 +47,7 @@ vpath %.hex ./$(BUILD_DIR)
 
 # GCC flags
 CFLAGS=-g -mmcu=$(PART) -O1 -Wall -Werror -DF_CPU=$(F_CPU)
+CXXFLAGS=$(CFLAGS) -std=c++11
 INCLUDES=-I. -I$(LIB_DIR)
 
 
@@ -68,21 +69,21 @@ $(APP_HEX): %.hex: %.elf
 
 # Application ELF files
 $(APP_ELF): %.elf: $(LIB_OBJECTS) $(LIB_CXX_OBJECTS) $(LIB_ASM_OBJECTS) $(APP_OBJECTS) $(APP_CXX_OBJECTS)
-	$(CXX) $(CFLAGS) $(BUILT_OBJECTS) --output $(BUILD_DIR)/$@ -Wl,-Map,$(BUILD_DIR)/$(basename $@).map
+	$(CXX) $(CXXFLAGS) $(BUILT_OBJECTS) --output $(BUILD_DIR)/$@ -Wl,-Map,$(BUILD_DIR)/$(basename $@).map
 
 # Application objects builder
 $(APP_OBJECTS): %.o: %.c
 	$(CC) -c $(CFLAGS) $(INCLUDES) $< -o $(BUILD_DIR)/$(notdir $@)
 
 $(APP_CXX_OBJECTS): %.o: %.cpp
-	$(CXX) -c $(CFLAGS) $(INCLUDES) $< -o $(BUILD_DIR)/$(notdir $@)
+	$(CXX) -c $(CXXFLAGS) $(INCLUDES) $< -o $(BUILD_DIR)/$(notdir $@)
 
 # Application objects builder
 $(LIB_OBJECTS): %.o: $(LIB_DIR)/%.c
 	$(CC) -c $(CFLAGS) $(INCLUDES) $< -o $(BUILD_DIR)/$(notdir $@)
 
 $(LIB_CXX_OBJECTS): %.o: $(LIB_DIR)/%.cpp
-	$(CXX) -c $(CFLAGS) $(INCLUDES) $< -o $(BUILD_DIR)/$(notdir $@)
+	$(CXX) -c $(CXXFLAGS) $(INCLUDES) $< -o $(BUILD_DIR)/$(notdir $@)
 
 $(LIB_ASM_OBJECTS): %.o: $(LIB_DIR)/%.s
 	$(CC) -c $(CFLAGS) -x assembler-with-cpp $(INCLUDES) $< -o $(BUILD_DIR)/$(notdir $@)
@@ -92,7 +93,7 @@ $(LIB_ASM_OBJECTS): %.o: $(LIB_DIR)/%.s
 	$(CC) $(CFLAGS) $(INCLUDES) -Wa,-al $< > $@
 
 %.lst: %.cpp
-	$(CXX) $(CFLAGS) $(INCLUDES) -Wa,-al $< > $@
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -Wa,-al $< > $@
 
 # Clean
 clean:
