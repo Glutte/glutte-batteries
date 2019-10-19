@@ -10,8 +10,8 @@ AVRDUDE_DEV=usb
 PROG = dragon_isp
 
 # Modify this to the CPU you are using
-PART=atmega328
-AVRDUDE_PART=m328
+PART=atmega328p
+AVRDUDE_PART=m328p
 
 # Cpu frequency is 16MHz, divider = 8
 F_CPU="(16000000UL/8)"
@@ -27,7 +27,7 @@ APP_CXX_OBJECTS = main.o
 APP_OBJECTS =
 
 # Library object files to build and use
-LIB_OBJECTS =
+LIB_OBJECTS = uart/uart.o
 LIB_CXX_OBJECTS =
 LIB_ASM_OBJECTS =
 LIB_DIR = lib
@@ -46,8 +46,10 @@ vpath %.elf ./$(BUILD_DIR)
 vpath %.hex ./$(BUILD_DIR)
 
 # GCC flags
-CFLAGS=-g -mmcu=$(PART) -O1 -Wall -Werror -DF_CPU=$(F_CPU)
-CXXFLAGS=$(CFLAGS) -std=c++11
+DEFINES=-DUART_RX0_BUFFER_SIZE=64 -DUART_TX0_BUFFER_SIZE=64
+FLAGS=-g -mmcu=$(PART) -Os -Wall -Werror -DF_CPU=$(F_CPU) $(DEFINES)
+CFLAGS=$(FLAGS) -std=c99
+CXXFLAGS=$(FLAGS) -std=c++11
 INCLUDES=-I. -I$(LIB_DIR)
 
 

@@ -24,6 +24,7 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #include <avr/pgmspace.h>
 #include <avr/io.h>
@@ -32,8 +33,15 @@
 #include <avr/eeprom.h>
 #include <avr/wdt.h>
 
+extern "C" {
+#include "uart.h"
+}
+
 // Definitions allocation pin
 #define PIN(x) (1 << x)
+
+// UART endline is usually CR LF
+#define ENDL "\r\n"
 
 /* All relay signals PINx_Kx have external pulldown.
  * All pins whose name ends in 'n' are active low */
@@ -86,15 +94,7 @@ uint32_t last_store_time; /* In seconds */
 
 uint32_t current_capacity;
 
-/* Assuming F_CPU at 16MHz / 8:
- *
- * overflow for 100ms: F_CPU [ticks/s] / prescaler [unit-less] * interval [s] = [ticks/s*s] = [ticks]
- * interval [s] = 0.1 = 1 / 10
- *
- * Actual interval after rounding:
- * interval [s] = overflow [ticks] / (F_CPU [ticks/s] / prescaler [unit-less])
- *              = 99.84 ms
- */
+/* Timer at approximately 100ms */
 volatile uint8_t timer_counter; /* Timer in 100ms steps */
 volatile uint32_t timer_seconds; /* Timer in seconds */
 
@@ -118,9 +118,7 @@ enum class error_type_t {
     EEPROM_WRITE_ERROR,
 };
 
-static void flag_error(error_type_t e) {
-    // TODO output error
-}
+static void flag_error(const error_type_t e);
 
 static void load_capacity_from_eeprom()
 {
@@ -165,6 +163,32 @@ static void store_capacity_to_eeprom()
     }
 }
 
+static char timestamp_buf[16];
+static void send_message(const char *message)
+{
+    snprintf(timestamp_buf, 15, "TEXT,%ld,", timer_seconds);
+    uart_puts(timestamp_buf);
+    uart_puts(message);
+    uart_puts_P(ENDL);
+}
+
+static void flag_error(const error_type_t e)
+{
+    snprintf(timestamp_buf, 15, "ERROR,%ld,", timer_seconds);
+    uart_puts(timestamp_buf);
+    switch (e) {
+        case error_type_t::EEPROM_READ_WARNING:
+            uart_puts_P("EEPRON read warning" ENDL);
+            break;
+        case error_type_t::EEPROM_READ_ERROR:
+            uart_puts_P("EEPRON read error" ENDL);
+            break;
+        case error_type_t::EEPROM_WRITE_ERROR:
+            uart_puts_P("EEPRON write error" ENDL);
+            break;
+    }
+}
+
 int main()
 {
     /* Save the reset source for debugging, then enable the watchdog.
@@ -186,7 +210,33 @@ int main()
     DDRC = PINC_OUTPUTS;
     DDRD = PIND_OUTPUTS;
 
-    /* Setup 100Hz timer */
+    /* Setup UART */
+    uart_init(UART_BAUD_SELECT(9600, F_CPU));
+    if (mcusr_mirror & WDRF) {
+        send_message("Startup after WDT reset");
+    }
+    else if (mcusr_mirror & BORF) {
+        send_message("Startup after brown-out");
+    }
+    else if (mcusr_mirror & EXTRF) {
+        send_message("Startup after external reset");
+    }
+    else if (mcusr_mirror & PORF) {
+        send_message("Startup after power-on reset");
+    }
+    else {
+        send_message("Startup");
+    }
+
+    /* Setup 100Hz timer, assuming F_CPU at 16MHz / 8:
+     *
+     * overflow for 100ms: F_CPU [ticks/s] / prescaler [unit-less] * interval [s] = [ticks/s*s] = [ticks]
+     * interval [s] = 0.1 = 1 / 10
+     *
+     * Actual interval after rounding:
+     * interval [s] = overflow [ticks] / (F_CPU [ticks/s] / prescaler [unit-less])
+     *              = 99.84 ms
+     */
     timer_seconds = 0;
     timer_counter = 0;
     TCCR0B |= (1 << WGM02); // Set timer mode to CTC (datasheet 15.7.2)

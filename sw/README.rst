@@ -9,6 +9,21 @@ Au démarrage, avant de passer à la mesure régulière, le code doit:
   - Attention au risque de problemes après 100000 écritures
   - Faire une vérification lecture après écriture et communiquer le problème
 - Mettre en place un watchdog
+- Initialiser UART (uniquement TX, on verra si on a besoin du RX plus tard)
+
+Protocole du port série:
+
+Chaque message commence par un identificateur, suivi d'une virgule, du temps en
+secondes, une virgule, un champ de données, et termine par CR LF.
+
++--------------------+-----------------------------------+
+| Identificateur     | Contenu du champ                  |
++--------------------+-----------------------------------+
+| `TEXT`             | Un message informatif             |
+| `ERROR`            | Erreur ou avertissement           |
++--------------------+-----------------------------------+
+
+Par exemple: `TEXT,12,Startup\r\n`
 
 TODO
 ----
@@ -17,8 +32,6 @@ TODO
 - Configurer SPI pour LTC2400
 - Initialiser entrées analogiques
 - Initialiser DS18B20
-- Initialiser UART (uniquement TX, on verra si on a besoin du RX plus tard)
-  - Décider quel protocole utiliser sur le port série
 
 
 Reglages eFuse
