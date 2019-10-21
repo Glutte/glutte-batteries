@@ -11,7 +11,8 @@ Au démarrage, avant de passer à la mesure régulière, le code doit:
 - Mettre en place un watchdog
 - Initialiser UART (uniquement TX, on verra si on a besoin du RX plus tard)
 
-Protocole du port série:
+Protocole du port série
+-----------------------
 
 Chaque message commence par un identificateur, suivi d'une virgule, du temps en
 secondes, une virgule, un champ de données, et termine par CR LF.
@@ -30,6 +31,7 @@ TODO
 
 - Definir le comportement par defaut au démarrage, pas de glitch!
 - Configurer SPI pour LTC2400
+  - Le code exemple utilise arduino et Wire.h
 - Initialiser entrées analogiques
 - Initialiser DS18B20
 

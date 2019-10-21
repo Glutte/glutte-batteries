@@ -210,6 +210,8 @@ int main()
     DDRC = PINC_OUTPUTS;
     DDRD = PIND_OUTPUTS;
 
+    // Warning: Bi-stable relays are still in unknown state!
+
     /* Setup UART */
     uart_init(UART_BAUD_SELECT(9600, F_CPU));
     if (mcusr_mirror & WDRF) {
