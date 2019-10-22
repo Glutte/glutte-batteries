@@ -522,7 +522,7 @@ $EndComp
 Wire Wire Line
 	5600 1900 5700 1900
 Text Notes 3000 1150 0    50   ~ 0
-TODO:\n* Filtre entre AD8210 et LTC2400\n* Decider DB9 GND connection\n* Check all footprints
+TODO:\n* Filtre entre AD8210 et LTC2400\n* Decider DB9 GND connection\n* Check DCDC cap footprints
 Text Label 7700 1350 2    50   ~ 0
 SSn
 Wire Wire Line
@@ -998,6 +998,7 @@ F 0 "FB1" V 10568 5000 50  0000 C CNN
 F 1 "DNF" V 10800 5100 50  0000 C CNN
 F 2 "Inductor_SMD:L_0805_2012Metric" V 10680 5000 50  0001 C CNN
 F 3 "~" H 10750 5000 50  0001 C CNN
+F 4 "BLM18BB221SN1D" H 10750 5000 50  0001 C CNN "MPN"
 	1    10750 5000
 	0    1    1    0   
 $EndComp
@@ -1334,6 +1335,7 @@ F 0 "J5" H 11080 5696 50  0000 L CNN
 F 1 "Glutte" H 10800 5000 50  0000 L CNN
 F 2 "Connector_Dsub:DSUB-9_Male_EdgeMount_P2.77mm" H 10900 5650 50  0001 C CNN
 F 3 " ~" H 10900 5650 50  0001 C CNN
+F 4 "09672095604" H 10900 5650 50  0001 C CNN "MPN"
 	1    10900 5650
 	1    0    0    -1  
 $EndComp
@@ -1375,6 +1377,7 @@ F 0 "J8" H 11080 4196 50  0000 L CNN
 F 1 "Raspi" H 10800 3600 50  0000 L CNN
 F 2 "Connector_Dsub:DSUB-9_Male_EdgeMount_P2.77mm" H 10900 4150 50  0001 C CNN
 F 3 " ~" H 10900 4150 50  0001 C CNN
+F 4 "09672095604" H 10900 4150 50  0001 C CNN "MPN"
 	1    10900 4150
 	1    0    0    -1  
 $EndComp
@@ -1386,6 +1389,7 @@ F 0 "FB2" V 10268 3750 50  0000 C CNN
 F 1 "DNF" V 10500 3850 50  0000 C CNN
 F 2 "Inductor_SMD:L_0805_2012Metric" V 10380 3750 50  0001 C CNN
 F 3 "~" H 10450 3750 50  0001 C CNN
+F 4 "BLM18BB221SN1D" H 10450 3750 50  0001 C CNN "MPN"
 	1    10450 3750
 	0    -1   -1   0   
 $EndComp

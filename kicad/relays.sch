@@ -24,6 +24,7 @@ F 0 "J3" H 7030 2792 50  0000 L CNN
 F 1 "K1" H 7030 2701 50  0000 L CNN
 F 2 "TerminalBlock_Phoenix:TerminalBlock_Phoenix_MPT-0,5-6-2.54_1x06_P2.54mm_Horizontal" H 6950 2800 50  0001 C CNN
 F 3 "~" H 6950 2800 50  0001 C CNN
+F 4 "1725698" H 6950 2800 50  0001 C CNN "MPN"
 	1    6950 2800
 	1    0    0    -1  
 $EndComp
@@ -76,6 +77,7 @@ F 0 "K1" H 5730 2896 50  0000 L CNN
 F 1 "G6SK-2F-DC5" H 5730 2805 50  0000 L CNN
 F 2 "Relay_SMD:Relay_DPDT_Omron_G6SK-2F" H 5450 2800 50  0001 L CNN
 F 3 "http://omronfs.omron.com/en_US/ecb/products/pdf/en-g6s.pdf" H 4600 2850 50  0001 C CNN
+F 4 "G6SK-2F-DC5" H 4900 2850 50  0001 C CNN "MPN"
 	1    4900 2850
 	1    0    0    -1  
 $EndComp
@@ -89,6 +91,7 @@ F 0 "K2" H 5730 4246 50  0000 L CNN
 F 1 "G6SK-2F-DC5" H 5730 4155 50  0000 L CNN
 F 2 "Relay_SMD:Relay_DPDT_Omron_G6SK-2F" H 5450 4150 50  0001 L CNN
 F 3 "http://omronfs.omron.com/en_US/ecb/products/pdf/en-g6s.pdf" H 4600 4200 50  0001 C CNN
+F 4 "G6SK-2F-DC5" H 4900 4200 50  0001 C CNN "MPN"
 	1    4900 4200
 	1    0    0    -1  
 $EndComp
@@ -102,6 +105,7 @@ F 0 "K3" H 5730 5496 50  0000 L CNN
 F 1 "G6SK-2F-DC5" H 5730 5405 50  0000 L CNN
 F 2 "Relay_SMD:Relay_DPDT_Omron_G6SK-2F" H 5450 5400 50  0001 L CNN
 F 3 "http://omronfs.omron.com/en_US/ecb/products/pdf/en-g6s.pdf" H 4600 5450 50  0001 C CNN
+F 4 "G6SK-2F-DC5" H 4900 5450 50  0001 C CNN "MPN"
 	1    4900 5450
 	1    0    0    -1  
 $EndComp
@@ -189,6 +193,7 @@ F 0 "J6" H 7030 4142 50  0000 L CNN
 F 1 "K2" H 7030 4051 50  0000 L CNN
 F 2 "TerminalBlock_Phoenix:TerminalBlock_Phoenix_MPT-0,5-6-2.54_1x06_P2.54mm_Horizontal" H 6950 4150 50  0001 C CNN
 F 3 "~" H 6950 4150 50  0001 C CNN
+F 4 "1725698" H 6950 4150 50  0001 C CNN "MPN"
 	1    6950 4150
 	1    0    0    -1  
 $EndComp
@@ -248,6 +253,7 @@ F 0 "J7" H 7030 5392 50  0000 L CNN
 F 1 "K3" H 7030 5301 50  0000 L CNN
 F 2 "TerminalBlock_Phoenix:TerminalBlock_Phoenix_MPT-0,5-6-2.54_1x06_P2.54mm_Horizontal" H 6950 5400 50  0001 C CNN
 F 3 "~" H 6950 5400 50  0001 C CNN
+F 4 "1725698" H 6950 5400 50  0001 C CNN "MPN"
 	1    6950 5400
 	1    0    0    -1  
 $EndComp
