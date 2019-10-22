@@ -20,14 +20,14 @@ F_CPU="(16000000UL/8)"
 BUILD_DIR=build
 
 # Port/application object files
-APP_NAME = testapp1
+APP_NAME = sw
 
 # Application object files
 APP_CXX_OBJECTS = main.o
 APP_OBJECTS =
 
 # Library object files to build and use
-LIB_OBJECTS = uart/uart.o
+LIB_OBJECTS = uart.o
 LIB_CXX_OBJECTS =
 LIB_ASM_OBJECTS =
 LIB_DIR = lib
