@@ -38,6 +38,7 @@ F 0 "U9" H 3200 3067 50  0000 C CNN
 F 1 "ULN2003A" H 3200 2976 50  0000 C CNN
 F 2 "Package_DIP:DIP-16_W7.62mm_Socket" H 3250 1850 50  0001 L CNN
 F 3 "http://www.ti.com/lit/ds/symlink/uln2003a.pdf" H 3300 2200 50  0001 C CNN
+F 4 "ULN2003A" H 3200 2400 50  0001 C CNN "MPN"
 	1    3200 2400
 	1    0    0    -1  
 $EndComp
@@ -473,9 +474,10 @@ L Device:R_Network06 RN1
 U 1 1 5DB1BAE1
 P 1800 3000
 F 0 "RN1" H 1421 2954 50  0000 R CNN
-F 1 "470R" H 1421 3045 50  0000 R CNN
+F 1 "2k2" H 1421 3045 50  0000 R CNN
 F 2 "Resistor_THT:R_Array_SIP7" V 2175 3000 50  0001 C CNN
 F 3 "http://www.vishay.com/docs/31509/csc.pdf" H 1800 3000 50  0001 C CNN
+F 4 "4607X-101-222LF" H 1800 3000 50  0001 C CNN "MPN"
 	1    1800 3000
 	1    0    0    1   
 $EndComp
