@@ -67,13 +67,34 @@ ongoing work.
 
 #include <stdint.h>
 #include <Arduino.h>
-#include "Linduino.h"
 #include <SPI.h>
-#include "LT_SPI.h"
-#include <Wire.h>
-#include "LT_I2C.h"
 #include "LTC24XX_general.h"
 
+typedef union LT_union_int32_4bytes_u
+{
+    uint32_t LT_uint32;
+    int32_t LT_int32;
+    uint8_t LT_byte[4];
+} LT_union_int32_4bytes;
+
+static void output_low(uint8_t pin) {
+    digitalWrite(pin, 0);
+}
+
+static void output_high(uint8_t pin) {
+    digitalWrite(pin, 1);
+}
+
+static int input(uint8_t pin) {
+    return digitalRead(pin);
+}
+
+// Ignore cs, because the SPI initialisation specifies the chip select pin */
+static void spi_transfer_block(uint8_t /*ignore cs*/, uint8_t command[4], uint8_t data[4], uint8_t len)
+{
+    SPI.transfer(command, 4);
+    SPI.transfer(data, len);
+}
 
 int8_t LTC24XX_EOC_timeout(uint8_t cs, uint16_t miso_timeout)
 // Checks for EOC with a specified timeout (ms)
@@ -257,6 +278,7 @@ void LTC24XX_SPI_2ch_ping_pong_24bit_data(uint8_t cs, uint8_t *adc_channel, int3
 }
 
 
+#if 0
 //I2C functions
 
 //! Reads from LTC24XX ADC that accepts an 8 bit configuration and returns a 24 bit result.
@@ -366,6 +388,8 @@ int8_t LTC24XX_I2C_16bit_command_32bit_data(uint8_t i2c_address,uint8_t adc_comm
   *adc_code = data.LT_int32;
   return(ack); // Success
 }
+
+#endif
 
 // Calculates the voltage corresponding to an adc code, given the reference voltage (in volts)
 float LTC24XX_SE_code_to_voltage(int32_t adc_code, float vref)

@@ -33,6 +33,8 @@
 #include <avr/eeprom.h>
 #include <avr/wdt.h>
 
+#include "SPI.h"
+
 extern "C" {
 #include "uart.h"
 }
@@ -209,6 +211,8 @@ int main()
     DDRB = PINB_OUTPUTS;
     DDRC = PINC_OUTPUTS;
     DDRD = PIND_OUTPUTS;
+
+    SPI.begin();
 
     // Warning: Bi-stable relays are still in unknown state!
 

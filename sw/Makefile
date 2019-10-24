@@ -22,18 +22,31 @@ BUILD_DIR=build
 # Port/application object files
 APP_NAME = sw
 
+HEADERS = \
+		  lib/Arduino.h \
+		  lib/DallasTemperature.h \
+		  lib/delay.h \
+		  lib/LTC24XX_general.h \
+		  lib/OneWire.h \
+		  lib/pins_arduino.h \
+		  lib/SPI.h \
+		  lib/uart.h \
+		  lib/util/OneWire_direct_gpio.h \
+		  lib/util/OneWire_direct_regtype.h \
+		  lib/wiring_private.h
+
 # Application object files
 APP_CXX_OBJECTS = main.o
 APP_OBJECTS =
 
 # Library object files to build and use
-LIB_OBJECTS = uart.o
-LIB_CXX_OBJECTS =
+LIB_OBJECTS = uart.o wiring_analog.o wiring_digital.o
+LIB_CXX_OBJECTS = OneWire.o DallasTemperature.o LTC24XX_general.o SPI.o
 LIB_ASM_OBJECTS =
 LIB_DIR = lib
 
 # Collection of built objects
-ALL_OBJECTS = $(LIB_OBJECTS) $(LIB_ASM_OBJECTS) $(APP_OBJECTS) $(APP_CXX_OBJECTS)
+ALL_OBJECTS = $(LIB_OBJECTS) $(LIB_ASM_OBJECTS) $(LIB_CXX_OBJECTS) $(APP_OBJECTS) $(APP_CXX_OBJECTS)
 BUILT_OBJECTS = $(patsubst %,$(BUILD_DIR)/%,$(ALL_OBJECTS))
 
 # Target application filenames (.elf and .hex) for each application object
@@ -46,10 +59,10 @@ vpath %.elf ./$(BUILD_DIR)
 vpath %.hex ./$(BUILD_DIR)
 
 # GCC flags
-DEFINES=-DUART_RX0_BUFFER_SIZE=64 -DUART_TX0_BUFFER_SIZE=64
-FLAGS=-g -mmcu=$(PART) -Os -Wall -Werror -DF_CPU=$(F_CPU) $(DEFINES)
+DEFINES=-DUART_RX0_BUFFER_SIZE=64 -DUART_TX0_BUFFER_SIZE=64 -DARDUINO=180
+FLAGS=-g -mmcu=$(PART) -Os -Wall -Wextra -Werror -DF_CPU=$(F_CPU) $(DEFINES) -ffunction-sections -fdata-sections -MMD -flto -fno-fat-lto-objects
 CFLAGS=$(FLAGS) -std=c99
-CXXFLAGS=$(FLAGS) -std=c++11
+CXXFLAGS=$(FLAGS) -std=c++11 -fno-exceptions -fno-threadsafe-statics
 INCLUDES=-I. -I$(LIB_DIR)
 
 
@@ -71,30 +84,30 @@ $(APP_HEX): %.hex: %.elf
 
 # Application ELF files
 $(APP_ELF): %.elf: $(LIB_OBJECTS) $(LIB_CXX_OBJECTS) $(LIB_ASM_OBJECTS) $(APP_OBJECTS) $(APP_CXX_OBJECTS)
-	$(CXX) $(CXXFLAGS) $(BUILT_OBJECTS) --output $(BUILD_DIR)/$@ -Wl,-Map,$(BUILD_DIR)/$(basename $@).map
+	$(CXX) $(CXXFLAGS) $(BUILT_OBJECTS) --output $(BUILD_DIR)/$@ -flto -fuse-linker-plugin -Wl,--gc-sections -Wl,-Map,$(BUILD_DIR)/$(basename $@).map
 
 # Application objects builder
-$(APP_OBJECTS): %.o: %.c
+$(APP_OBJECTS): %.o: %.c $(HEADERS)
 	$(CC) -c $(CFLAGS) $(INCLUDES) $< -o $(BUILD_DIR)/$(notdir $@)
 
-$(APP_CXX_OBJECTS): %.o: %.cpp
+$(APP_CXX_OBJECTS): %.o: %.cpp $(HEADERS)
 	$(CXX) -c $(CXXFLAGS) $(INCLUDES) $< -o $(BUILD_DIR)/$(notdir $@)
 
 # Application objects builder
-$(LIB_OBJECTS): %.o: $(LIB_DIR)/%.c
+$(LIB_OBJECTS): %.o: $(LIB_DIR)/%.c $(HEADERS)
 	$(CC) -c $(CFLAGS) $(INCLUDES) $< -o $(BUILD_DIR)/$(notdir $@)
 
-$(LIB_CXX_OBJECTS): %.o: $(LIB_DIR)/%.cpp
+$(LIB_CXX_OBJECTS): %.o: $(LIB_DIR)/%.cpp $(HEADERS)
 	$(CXX) -c $(CXXFLAGS) $(INCLUDES) $< -o $(BUILD_DIR)/$(notdir $@)
 
 $(LIB_ASM_OBJECTS): %.o: $(LIB_DIR)/%.s
-	$(CC) -c $(CFLAGS) -x assembler-with-cpp $(INCLUDES) $< -o $(BUILD_DIR)/$(notdir $@)
+	$(CC) -c $(CFLAGS) -x assembler-with-cpp -flto -MMD $(INCLUDES) $< -o $(BUILD_DIR)/$(notdir $@)
 
 # .lst file builder
-%.lst: %.c
+%.lst: %.c $(HEADERS)
 	$(CC) $(CFLAGS) $(INCLUDES) -Wa,-al $< > $@
 
-%.lst: %.cpp
+%.lst: %.cpp $(HEADERS)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -Wa,-al $< > $@
 
 # Clean

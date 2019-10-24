@@ -123,6 +123,8 @@ ongoing work.
 #ifndef LTC24XX_general_H
 #define LTC24XX_general_H
 
+#include <stdint.h>
+
 //! Define the SPI CS pin
 #ifndef LTC24XX_CS
 #define LTC24XX_CS QUIKEVAL_CS
@@ -341,6 +343,8 @@ void LTC24XX_SPI_2ch_ping_pong_24bit_data(uint8_t cs,           //!< Chip Select
                                           int32_t *code         //!< 4 byte conversion code read from LTC24XX
                                          );
 
+#if 0
+
 // Read functions for I2C interface ADCs with a 32 bit output word. These functions are used with both
 // Single-ended and differential parts, as there is no interpretation of the data done in
 // the function. Also note that these functions can be used for devices that have shorter output lengths,
@@ -409,6 +413,8 @@ int8_t LTC24XX_I2C_16bit_command_24bit_data(uint8_t i2c_address,         //!< I2
                                             int32_t *adc_code,           //!< 4 byte conversion code read from LTC24XX
                                             uint16_t eoc_timeout         //!< Timeout (in milliseconds)
                                            );
+
+#endif
 
 //! Calculates the voltage corresponding to an ADC code, given the reference voltage.
 //! Applies to Single-Ended input parts (LTC2400-type input)
