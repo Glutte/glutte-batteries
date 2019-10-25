@@ -14,6 +14,8 @@
 #ifndef _SPI_H_INCLUDED
 #define _SPI_H_INCLUDED
 
+#error "do not use"
+
 #include <Arduino.h>
 
 // SPI_HAS_TRANSACTION means SPI has beginTransaction(), endTransaction(),

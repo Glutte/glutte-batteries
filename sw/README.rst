@@ -33,6 +33,7 @@ TODO
 - Configurer SPI pour LTC2400
   - Le code exemple utilise arduino et Wire.h
 - Initialiser entrées analogiques
+  - Mesurer tension batterie
 - Initialiser DS18B20
 
 

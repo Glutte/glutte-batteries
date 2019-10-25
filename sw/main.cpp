@@ -33,57 +33,44 @@
 #include <avr/eeprom.h>
 #include <avr/wdt.h>
 
-#include "SPI.h"
+#include "pins.h"
+#include "ltc2400.h"
 
 extern "C" {
 #include "uart.h"
 }
 
-// Definitions allocation pin
-#define PIN(x) (1 << x)
-
 // UART endline is usually CR LF
 #define ENDL "\r\n"
 
-/* All relay signals PINx_Kx have external pulldown.
- * All pins whose name ends in 'n' are active low */
+struct timer_t {
+    uint32_t seconds = 0; /* Timer in seconds */
+    uint8_t ticks = 0; /* Timer in 100ms steps */
 
-// PORT B
-constexpr uint8_t PINB_STATUSn = PIN(0);
-// Pins 2,3,4,5 = SPI
-constexpr uint8_t PINB_SPI_LTC_CSn = PIN(2); // with external pullup
-constexpr uint8_t PINB_SPI_MOSI = PIN(3);
-constexpr uint8_t PINB_SPI_MISO = PIN(4);
-constexpr uint8_t PINB_SPI_SCK = PIN(5);
+    bool operator>(const timer_t& rhs) {
+        return (seconds > rhs.seconds) or
+            (seconds == rhs.seconds and ticks > rhs.ticks);
+    }
 
-constexpr uint8_t PINB_OUTPUTS =
-    PINB_STATUSn | PINB_SPI_SCK | PINB_SPI_MOSI | PINB_SPI_LTC_CSn;
+    timer_t operator+(int ticks) {
+        timer_t t;
+        t.seconds = this->seconds;
+        t.ticks = this->ticks + ticks;
+        while (t.ticks >= 10) {
+            t.seconds++;
+            t.ticks -= 10;
+        }
+        return t;
+    }
 
-// PORT C
-constexpr uint8_t PINC_ADC0 = PIN(0);
-constexpr uint8_t PINC_ADC1 = PIN(1);
-constexpr uint8_t PINC_K3_RESET = PIN(2);
-constexpr uint8_t PINC_K3_SET = PIN(3);
-constexpr uint8_t PINC_K2_RESET = PIN(4);
-constexpr uint8_t PINC_K2_SET = PIN(5);
-
-constexpr uint8_t PINC_OUTPUTS =
-    PINC_K3_RESET | PINC_K3_SET |
-    PINC_K2_RESET | PINC_K2_SET;
-
-// PORT D
-// Pins 0,1 = UART RX,TX
-constexpr uint8_t PIND_UART_RX = PIN(0);
-constexpr uint8_t PIND_UART_TX = PIN(1);
-
-constexpr uint8_t PIND_ONEWIRE = PIN(4); // with exteral pullup
-
-constexpr uint8_t PIND_K1_RESET = PIN(5);
-constexpr uint8_t PIND_K1_SET = PIN(6);
-
-constexpr uint8_t PIND_OUTPUTS =
-    PIND_UART_TX |
-    PIND_K1_RESET | PIND_K1_SET;
+    void operator+=(int ticks) {
+        this->ticks += ticks;
+        while (this->ticks >= 10) {
+            seconds++;
+            this->ticks -= 10;
+        }
+    }
+};
 
 /* Storage of battery capacity in mC.
  * 3600 mC = 1mAh */
@@ -94,11 +81,12 @@ uint32_t EEMEM stored_capacity2;
 uint32_t EEMEM stored_capacity3;
 uint32_t last_store_time; /* In seconds */
 
+timer_t last_ltc2400_measure;
+
 uint32_t current_capacity;
 
 /* Timer at approximately 100ms */
-volatile uint8_t timer_counter; /* Timer in 100ms steps */
-volatile uint32_t timer_seconds; /* Timer in seconds */
+static timer_t system_timer;
 
 /* At reset, save the mcusr register to find out why we got reset.
  * Datasheet 11.9.1, example code from wdt.h */
@@ -106,11 +94,12 @@ uint8_t mcusr_mirror __attribute__ ((section (".noinit")));
 
 ISR(TIMER0_COMPA_vect)
 {
-    timer_counter++;
-
-    if (timer_counter >= 10) {
-        timer_seconds++;
-        timer_counter = 0;
+    if (system_timer.ticks == 9) {
+        system_timer.seconds++;
+        system_timer.ticks = 0;
+    }
+    else {
+        system_timer.ticks++;
     }
 }
 
@@ -118,6 +107,8 @@ enum class error_type_t {
     EEPROM_READ_WARNING,
     EEPROM_READ_ERROR,
     EEPROM_WRITE_ERROR,
+    LTC2400_DMY_BIT_FAULT,
+    LTC2400_EXTENDED_RANGE_ERROR,
 };
 
 static void flag_error(const error_type_t e);
@@ -168,7 +159,7 @@ static void store_capacity_to_eeprom()
 static char timestamp_buf[16];
 static void send_message(const char *message)
 {
-    snprintf(timestamp_buf, 15, "TEXT,%ld,", timer_seconds);
+    snprintf(timestamp_buf, 15, "TEXT,%ld,", system_timer.seconds);
     uart_puts(timestamp_buf);
     uart_puts(message);
     uart_puts_P(ENDL);
@@ -176,7 +167,7 @@ static void send_message(const char *message)
 
 static void flag_error(const error_type_t e)
 {
-    snprintf(timestamp_buf, 15, "ERROR,%ld,", timer_seconds);
+    snprintf(timestamp_buf, 15, "ERROR,%ld,", system_timer.seconds);
     uart_puts(timestamp_buf);
     switch (e) {
         case error_type_t::EEPROM_READ_WARNING:
@@ -187,6 +178,12 @@ static void flag_error(const error_type_t e)
             break;
         case error_type_t::EEPROM_WRITE_ERROR:
             uart_puts_P("EEPRON write error" ENDL);
+            break;
+        case error_type_t::LTC2400_DMY_BIT_FAULT:
+            uart_puts_P("LTC2400 DMY bit error" ENDL);
+            break;
+        case error_type_t::LTC2400_EXTENDED_RANGE_ERROR:
+            uart_puts_P("LTC2400 extended range error" ENDL);
             break;
     }
 }
@@ -203,6 +200,7 @@ int main()
 
     /* Setup GPIO */
     // Active-low outputs must be high
+    // PINB_SPI_SCK must be low (See ltc2400.h)
     PORTB = PINB_STATUSn | PINB_SPI_LTC_CSn;
     PORTC = 0;
     PORTD = 0;
@@ -212,7 +210,11 @@ int main()
     DDRC = PINC_OUTPUTS;
     DDRD = PIND_OUTPUTS;
 
-    SPI.begin();
+    // Initialise SPI and LTC2400
+    ltc2400_init();
+
+    // Use the LDO on Vref as ADC reference, set REFS1..REFS0 = 0b00
+    ADMUX &= ~(_BV(REFS0) | _BV(REFS1));
 
     // Warning: Bi-stable relays are still in unknown state!
 
@@ -243,8 +245,8 @@ int main()
      * interval [s] = overflow [ticks] / (F_CPU [ticks/s] / prescaler [unit-less])
      *              = 99.84 ms
      */
-    timer_seconds = 0;
-    timer_counter = 0;
+    system_timer.seconds = 0;
+    system_timer.ticks = 0;
     TCCR0B |= (1 << WGM02); // Set timer mode to CTC (datasheet 15.7.2)
     TIMSK0 |= (1 << TOIE0); // enable overflow interrupt
     OCR0A = (uint8_t)(F_CPU / 1024 / 10); // Overflow at 99.84 ms
@@ -252,7 +254,7 @@ int main()
 
     /* Load capacity stored in EEPROM */
     load_capacity_from_eeprom();
-    last_store_time = timer_seconds;
+    last_store_time = system_timer.seconds;
 
     /* Enable interrupts */
     sei();
@@ -262,8 +264,27 @@ int main()
     while (true) {
         sleep_mode();
 
-        if (last_store_time + 3600 * 5 >= timer_seconds) {
+        if (last_store_time + 3600 * 5 >= system_timer.seconds) {
             store_capacity_to_eeprom();
+        }
+
+        if (last_ltc2400_measure + 100 > system_timer) {
+            last_ltc2400_measure += 100;
+
+            if (ltc2400_conversion_ready()) {
+                bool dmy_fault = false;
+                bool exr_fault = false;
+                float adc_voltage = ltc2400_get_conversion_result(dmy_fault, exr_fault);
+#error "convert to mAh and integrate"
+
+                if (dmy_fault) {
+                    flag_error(error_type_t::LTC2400_DMY_BIT_FAULT);
+                }
+
+                if (exr_fault) {
+                    flag_error(error_type_t::LTC2400_EXTENDED_RANGE_ERROR);
+                }
+            }
         }
     }
 

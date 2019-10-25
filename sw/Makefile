@@ -26,22 +26,19 @@ HEADERS = \
 		  lib/Arduino.h \
 		  lib/DallasTemperature.h \
 		  lib/delay.h \
-		  lib/LTC24XX_general.h \
 		  lib/OneWire.h \
 		  lib/pins_arduino.h \
-		  lib/SPI.h \
 		  lib/uart.h \
 		  lib/util/OneWire_direct_gpio.h \
-		  lib/util/OneWire_direct_regtype.h \
-		  lib/wiring_private.h
+		  lib/util/OneWire_direct_regtype.h
 
 # Application object files
-APP_CXX_OBJECTS = main.o
+APP_CXX_OBJECTS = main.o ltc2400.o
 APP_OBJECTS =
 
 # Library object files to build and use
-LIB_OBJECTS = uart.o wiring_analog.o wiring_digital.o
-LIB_CXX_OBJECTS = OneWire.o DallasTemperature.o LTC24XX_general.o SPI.o
+LIB_OBJECTS = uart.o
+LIB_CXX_OBJECTS = OneWire.o DallasTemperature.o
 LIB_ASM_OBJECTS =
 LIB_DIR = lib
 
