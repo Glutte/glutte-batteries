@@ -1496,4 +1496,6 @@ $EndComp
 Wire Wire Line
 	8250 5250 8000 5250
 Connection ~ 8250 5250
+Text Notes 3050 1800 0    31   ~ 0
+Vout - 2.5V = 20 * Ishunt * Rshunt\nSee AD8210 datasheet\n"Splitting an external reference"
 $EndSCHEMATC

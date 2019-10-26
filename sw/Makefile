@@ -57,7 +57,7 @@ vpath %.hex ./$(BUILD_DIR)
 
 # GCC flags
 DEFINES=-DUART_RX0_BUFFER_SIZE=64 -DUART_TX0_BUFFER_SIZE=64 -DARDUINO=180
-FLAGS=-g -mmcu=$(PART) -Os -Wall -Wextra -Werror -DF_CPU=$(F_CPU) $(DEFINES) -ffunction-sections -fdata-sections -MMD -flto -fno-fat-lto-objects
+FLAGS=-g -mmcu=$(PART) -Os -Wall -Wextra -DF_CPU=$(F_CPU) $(DEFINES) -ffunction-sections -fdata-sections -MMD -flto -fno-fat-lto-objects
 CFLAGS=$(FLAGS) -std=c99
 CXXFLAGS=$(FLAGS) -std=c++11 -fno-exceptions -fno-threadsafe-statics
 INCLUDES=-I. -I$(LIB_DIR)

@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <math.h>
 
 #include <avr/pgmspace.h>
 #include <avr/io.h>
@@ -42,6 +43,9 @@ extern "C" {
 
 // UART endline is usually CR LF
 #define ENDL "\r\n"
+
+constexpr double R_SHUNT = 5e-3;
+constexpr int TICKS_PER_SECOND = 10;
 
 struct timer_t {
     uint32_t seconds = 0; /* Timer in seconds */
@@ -70,6 +74,8 @@ struct timer_t {
             this->ticks -= 10;
         }
     }
+
+    static constexpr int ms_to_ticks(int ms) { return ms / 100; }
 };
 
 /* Storage of battery capacity in mC.
@@ -198,17 +204,22 @@ int main()
     wdt_reset();
     wdt_enable(WDTO_4S);
 
+    current_capacity = 0;
+#warning "Initialise current_capacity properly"
+
     /* Setup GPIO */
     // Active-low outputs must be high
     // PINB_SPI_SCK must be low (See ltc2400.h)
-    PORTB = PINB_STATUSn | PINB_SPI_LTC_CSn;
-    PORTC = 0;
-    PORTD = 0;
+    PORTB = PINB_INIT;
+    PORTC = PINC_INIT;
+    PORTD = PIND_INIT;
 
     // Enable output
     DDRB = PINB_OUTPUTS;
     DDRC = PINC_OUTPUTS;
     DDRD = PIND_OUTPUTS;
+
+    pins_set_status(true);
 
     // Initialise SPI and LTC2400
     ltc2400_init();
@@ -247,10 +258,10 @@ int main()
      */
     system_timer.seconds = 0;
     system_timer.ticks = 0;
-    TCCR0B |= (1 << WGM02); // Set timer mode to CTC (datasheet 15.7.2)
-    TIMSK0 |= (1 << TOIE0); // enable overflow interrupt
+    TCCR0B |= _BV(WGM02); // Set timer mode to CTC (datasheet 15.7.2)
+    TIMSK0 |= _BV(TOIE0); // enable overflow interrupt
     OCR0A = (uint8_t)(F_CPU / 1024 / 10); // Overflow at 99.84 ms
-    TCCR0B |= (1 << CS02) | (1 << CS00); // Start timer at Fcpu/1024
+    TCCR0B |= _BV(CS02) | _BV(CS00); // Start timer at Fcpu/1024
 
     /* Load capacity stored in EEPROM */
     load_capacity_from_eeprom();
@@ -259,23 +270,27 @@ int main()
     /* Enable interrupts */
     sei();
 
+    double accum = 0.0;
+
     /* Put the CPU to sleep */
     set_sleep_mode(SLEEP_MODE_IDLE);
     while (true) {
         sleep_mode();
 
+        pins_set_status(system_timer.ticks == 0);
+
         if (last_store_time + 3600 * 5 >= system_timer.seconds) {
             store_capacity_to_eeprom();
         }
 
-        if (last_ltc2400_measure + 100 > system_timer) {
-            last_ltc2400_measure += 100;
+        constexpr auto ltc2400_measure_interval = timer_t::ms_to_ticks(100);
+        if (last_ltc2400_measure + ltc2400_measure_interval > system_timer) {
+            last_ltc2400_measure += ltc2400_measure_interval;
 
             if (ltc2400_conversion_ready()) {
                 bool dmy_fault = false;
                 bool exr_fault = false;
-                float adc_voltage = ltc2400_get_conversion_result(dmy_fault, exr_fault);
-#error "convert to mAh and integrate"
+                const float adc_voltage = ltc2400_get_conversion_result(dmy_fault, exr_fault);
 
                 if (dmy_fault) {
                     flag_error(error_type_t::LTC2400_DMY_BIT_FAULT);
@@ -284,6 +299,11 @@ int main()
                 if (exr_fault) {
                     flag_error(error_type_t::LTC2400_EXTENDED_RANGE_ERROR);
                 }
+
+                /* Vout - 2.5V = Ishunt * Rshunt * 20 */
+                const double i_shunt = (adc_voltage - 2.5) / (20.0 * R_SHUNT);
+                accum += i_shunt / TICKS_PER_SECOND;
+                current_capacity = lrint(accum);
             }
         }
     }
