@@ -51,31 +51,46 @@ struct timer_t {
     uint32_t seconds = 0; /* Timer in seconds */
     uint8_t ticks = 0; /* Timer in 100ms steps */
 
+    timer_t() {}
+    timer_t(uint32_t seconds_, uint8_t ticks_) : seconds(seconds_), ticks(ticks_) {}
+
     bool operator>(const timer_t& rhs) {
         return (seconds > rhs.seconds) or
             (seconds == rhs.seconds and ticks > rhs.ticks);
     }
 
-    timer_t operator+(int ticks) {
-        timer_t t;
-        t.seconds = this->seconds;
-        t.ticks = this->ticks + ticks;
-        while (t.ticks >= 10) {
-            t.seconds++;
-            t.ticks -= 10;
+    void normalise() {
+        while (ticks >= 10) {
+            seconds++;
+            ticks -= 10;
         }
+    }
+
+    timer_t operator+(const timer_t& rhs) {
+        timer_t t;
+        t.seconds = seconds + rhs.seconds;
+        t.ticks = ticks + rhs.ticks;
+        t.normalise();
         return t;
     }
 
-    void operator+=(int ticks) {
-        this->ticks += ticks;
-        while (this->ticks >= 10) {
-            seconds++;
-            this->ticks -= 10;
-        }
+    timer_t operator+(uint8_t ticks) {
+        timer_t t = timer_t(0, ticks);
+        return *this + t;
+    }
+
+    void operator+=(const timer_t& inc) {
+        seconds += inc.seconds;
+        ticks += inc.ticks;
+        normalise();
+    }
+
+    void operator+=(uint8_t ticks) {
+        *this += timer_t(0, ticks);
     }
 
     static constexpr int ms_to_ticks(int ms) { return ms / 100; }
+    static timer_t from_seconds(uint32_t s) { return timer_t(s, 0); }
 };
 
 /* Storage of battery capacity in mC.
@@ -88,6 +103,7 @@ uint32_t EEMEM stored_capacity3;
 uint32_t last_store_time; /* In seconds */
 
 timer_t last_ltc2400_measure;
+timer_t last_ltc2400_print_time;
 
 uint32_t current_capacity;
 
@@ -169,6 +185,12 @@ static void send_message(const char *message)
     uart_puts(timestamp_buf);
     uart_puts(message);
     uart_puts_P(ENDL);
+}
+
+static void send_capacity(uint32_t capacity)
+{
+    snprintf(timestamp_buf, 15, "CAPACITY,%ld,%ld" ENDL, system_timer.seconds, capacity);
+    uart_puts(timestamp_buf);
 }
 
 static void flag_error(const error_type_t e)
@@ -265,12 +287,14 @@ int main()
 
     /* Load capacity stored in EEPROM */
     load_capacity_from_eeprom();
+    last_ltc2400_print_time = last_ltc2400_measure = system_timer;
     last_store_time = system_timer.seconds;
 
     /* Enable interrupts */
     sei();
 
-    double accum = 0.0;
+#warning "Decode if we should accumulate in a double or uint32 */
+    double accum = current_capacity;
 
     /* Put the CPU to sleep */
     set_sleep_mode(SLEEP_MODE_IDLE);
@@ -305,6 +329,12 @@ int main()
                 accum += i_shunt / TICKS_PER_SECOND;
                 current_capacity = lrint(accum);
             }
+        }
+
+        const auto ltc2400_print_interval = timer_t::from_seconds(10);
+        if (last_ltc2400_print_time + ltc2400_print_interval > system_timer) {
+            last_ltc2400_print_time += ltc2400_print_interval;
+            send_capacity(current_capacity);
         }
     }
 
