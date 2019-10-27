@@ -45,43 +45,61 @@ extern "C" {
 #define ENDL "\r\n"
 
 constexpr double R_SHUNT = 5e-3;
-constexpr int TICKS_PER_SECOND = 10;
 
 struct timer_t {
-    uint32_t seconds = 0; /* Timer in seconds */
-    uint8_t ticks = 0; /* Timer in 100ms steps */
+    uint32_t seconds_ = 0; /* Timer in seconds */
+    uint8_t ticks_ = 0; /* Timer in 100ms steps */
 
     timer_t() {}
-    timer_t(uint32_t seconds_, uint8_t ticks_) : seconds(seconds_), ticks(ticks_) {}
+    timer_t(uint32_t seconds, uint8_t ticks) : seconds_(seconds), ticks_(ticks) {}
 
-    bool operator>(const timer_t& rhs) {
-        return (seconds > rhs.seconds) or
-            (seconds == rhs.seconds and ticks > rhs.ticks);
+    timer_t get_atomic_copy() const {
+        cli();
+        const auto t = *this;
+        sei();
+        return t;
+    }
+
+    uint32_t get_seconds_atomic() const {
+        cli();
+        uint32_t s = seconds_;
+        sei();
+        return s;
+    }
+
+    uint8_t get_ticks_atomic() const {
+        /* Returning an uint8_t is atomic */
+        return ticks_;
+    }
+
+    bool operator>(const timer_t& rhs) const {
+        return (seconds_ > rhs.seconds_) or
+            (seconds_ == rhs.seconds_ and ticks_ > rhs.ticks_);
     }
 
     void normalise() {
-        while (ticks >= 10) {
-            seconds++;
-            ticks -= 10;
+        while (ticks_ >= 10) {
+            seconds_++;
+            ticks_ -= 10;
         }
     }
 
-    timer_t operator+(const timer_t& rhs) {
+    timer_t operator+(const timer_t& rhs) const {
         timer_t t;
-        t.seconds = seconds + rhs.seconds;
-        t.ticks = ticks + rhs.ticks;
+        t.seconds_ = seconds_ + rhs.seconds_;
+        t.ticks_ = ticks_ + rhs.ticks_;
         t.normalise();
         return t;
     }
 
-    timer_t operator+(uint8_t ticks) {
+    timer_t operator+(uint8_t ticks) const {
         timer_t t = timer_t(0, ticks);
         return *this + t;
     }
 
     void operator+=(const timer_t& inc) {
-        seconds += inc.seconds;
-        ticks += inc.ticks;
+        seconds_ += inc.seconds_;
+        ticks_ += inc.ticks_;
         normalise();
     }
 
@@ -90,7 +108,6 @@ struct timer_t {
     }
 
     static constexpr int ms_to_ticks(int ms) { return ms / 100; }
-    static timer_t from_seconds(uint32_t s) { return timer_t(s, 0); }
 };
 
 /* Storage of battery capacity in mC.
@@ -107,7 +124,10 @@ timer_t last_ltc2400_print_time;
 
 uint32_t current_capacity;
 
-/* Timer at approximately 100ms */
+/* Timer at approximately 100ms.
+ * Since this timer is updated in an ISR, care has to be taken
+ * when reading it, because all operations involving variables
+ * larger than 1 byte are not atomic on AVR. */
 static timer_t system_timer;
 
 /* At reset, save the mcusr register to find out why we got reset.
@@ -116,13 +136,7 @@ uint8_t mcusr_mirror __attribute__ ((section (".noinit")));
 
 ISR(TIMER0_COMPA_vect)
 {
-    if (system_timer.ticks == 9) {
-        system_timer.seconds++;
-        system_timer.ticks = 0;
-    }
-    else {
-        system_timer.ticks++;
-    }
+    system_timer += 1;
 }
 
 enum class error_type_t {
@@ -162,6 +176,7 @@ static void load_capacity_from_eeprom()
     else {
         flag_error(error_type_t::EEPROM_READ_ERROR);
         current_capacity = cap2; // arbitrary
+#warning "Have a meaningful value for the very first startup value"
     }
 }
 
@@ -181,7 +196,7 @@ static void store_capacity_to_eeprom()
 static char timestamp_buf[16];
 static void send_message(const char *message)
 {
-    snprintf(timestamp_buf, 15, "TEXT,%ld,", system_timer.seconds);
+    snprintf(timestamp_buf, 15, "TEXT,%ld,", system_timer.get_seconds_atomic());
     uart_puts(timestamp_buf);
     uart_puts(message);
     uart_puts_P(ENDL);
@@ -189,13 +204,13 @@ static void send_message(const char *message)
 
 static void send_capacity(uint32_t capacity)
 {
-    snprintf(timestamp_buf, 15, "CAPACITY,%ld,%ld" ENDL, system_timer.seconds, capacity);
+    snprintf(timestamp_buf, 15, "CAPACITY,%ld,%ld" ENDL, system_timer.get_seconds_atomic(), capacity);
     uart_puts(timestamp_buf);
 }
 
 static void flag_error(const error_type_t e)
 {
-    snprintf(timestamp_buf, 15, "ERROR,%ld,", system_timer.seconds);
+    snprintf(timestamp_buf, 15, "ERROR,%ld,", system_timer.get_seconds_atomic());
     uart_puts(timestamp_buf);
     switch (e) {
         case error_type_t::EEPROM_READ_WARNING:
@@ -225,9 +240,6 @@ int main()
     MCUSR = 0;
     wdt_reset();
     wdt_enable(WDTO_4S);
-
-    current_capacity = 0;
-#warning "Initialise current_capacity properly"
 
     /* Setup GPIO */
     // Active-low outputs must be high
@@ -278,22 +290,24 @@ int main()
      * interval [s] = overflow [ticks] / (F_CPU [ticks/s] / prescaler [unit-less])
      *              = 99.84 ms
      */
-    system_timer.seconds = 0;
-    system_timer.ticks = 0;
+    system_timer = timer_t(0, 0);
     TCCR0B |= _BV(WGM02); // Set timer mode to CTC (datasheet 15.7.2)
     TIMSK0 |= _BV(TOIE0); // enable overflow interrupt
-    OCR0A = (uint8_t)(F_CPU / 1024 / 10); // Overflow at 99.84 ms
+    const uint8_t overflow = (uint8_t)(F_CPU / 1024 / 10); // Overflow at 99.84 ms
+    OCR0A = overflow;
     TCCR0B |= _BV(CS02) | _BV(CS00); // Start timer at Fcpu/1024
+    const double tick_interval = (double)overflow / ((double)F_CPU / 1024.0 / 10.0);
 
     /* Load capacity stored in EEPROM */
+    current_capacity = 0;
     load_capacity_from_eeprom();
     last_ltc2400_print_time = last_ltc2400_measure = system_timer;
-    last_store_time = system_timer.seconds;
+    last_store_time = system_timer.get_seconds_atomic();
 
     /* Enable interrupts */
     sei();
 
-#warning "Decode if we should accumulate in a double or uint32 */
+    // Accumulate in floating point
     double accum = current_capacity;
 
     /* Put the CPU to sleep */
@@ -301,14 +315,14 @@ int main()
     while (true) {
         sleep_mode();
 
-        pins_set_status(system_timer.ticks == 0);
+        pins_set_status(system_timer.get_ticks_atomic() == 0);
 
-        if (last_store_time + 3600 * 5 >= system_timer.seconds) {
+        if (last_store_time + 3600 * 5 >= system_timer.get_seconds_atomic()) {
             store_capacity_to_eeprom();
         }
 
         constexpr auto ltc2400_measure_interval = timer_t::ms_to_ticks(100);
-        if (last_ltc2400_measure + ltc2400_measure_interval > system_timer) {
+        if (last_ltc2400_measure + ltc2400_measure_interval > system_timer.get_atomic_copy()) {
             last_ltc2400_measure += ltc2400_measure_interval;
 
             if (ltc2400_conversion_ready()) {
@@ -326,13 +340,13 @@ int main()
 
                 /* Vout - 2.5V = Ishunt * Rshunt * 20 */
                 const double i_shunt = (adc_voltage - 2.5) / (20.0 * R_SHUNT);
-                accum += i_shunt / TICKS_PER_SECOND;
+                accum += i_shunt * tick_interval;
                 current_capacity = lrint(accum);
             }
         }
 
-        const auto ltc2400_print_interval = timer_t::from_seconds(10);
-        if (last_ltc2400_print_time + ltc2400_print_interval > system_timer) {
+        const auto ltc2400_print_interval = timer_t(10, 0);
+        if (last_ltc2400_print_time + ltc2400_print_interval > system_timer.get_atomic_copy()) {
             last_ltc2400_print_time += ltc2400_print_interval;
             send_capacity(current_capacity);
         }
