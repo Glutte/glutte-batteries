@@ -83,12 +83,17 @@ constexpr uint8_t PIND_INIT = 0;
 
 inline void pins_set_status(bool enable)
 {
-    cli();
     if (enable) {
         PORTB &= ~PINB_STATUSn;
     }
     else {
         PORTB |= PINB_STATUSn;
     }
-    sei();
 }
+
+enum class relay_id_t {
+    K1,
+    K2,
+    K3,
+};
+

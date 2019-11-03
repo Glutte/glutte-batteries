@@ -23,6 +23,8 @@ BUILD_DIR=build
 APP_NAME = sw
 
 HEADERS = \
+		  common.hpp \
+		  relays.hpp \
 		  lib/Arduino.h \
 		  lib/DallasTemperature.h \
 		  lib/delay.h \
@@ -33,7 +35,7 @@ HEADERS = \
 		  lib/util/OneWire_direct_regtype.h
 
 # Application object files
-APP_CXX_OBJECTS = main.o ltc2400.o
+APP_CXX_OBJECTS = main.o relays.o ltc2400.o
 APP_OBJECTS =
 
 # Library object files to build and use

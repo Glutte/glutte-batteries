@@ -34,6 +34,7 @@
 #include <avr/eeprom.h>
 #include <avr/wdt.h>
 
+#include "common.hpp"
 #include "pins.h"
 #include "ltc2400.h"
 
@@ -44,71 +45,18 @@ extern "C" {
 // UART endline is usually CR LF
 #define ENDL "\r\n"
 
-constexpr double R_SHUNT = 5e-3;
+constexpr double R_SHUNT = 5e-3; // Ohm
 
-struct timer_t {
-    uint32_t seconds_ = 0; /* Timer in seconds */
-    uint8_t ticks_ = 0; /* Timer in 100ms steps */
-
-    timer_t() {}
-    timer_t(uint32_t seconds, uint8_t ticks) : seconds_(seconds), ticks_(ticks) {}
-
-    timer_t get_atomic_copy() const {
-        cli();
-        const auto t = *this;
-        sei();
-        return t;
-    }
-
-    uint32_t get_seconds_atomic() const {
-        cli();
-        uint32_t s = seconds_;
-        sei();
-        return s;
-    }
-
-    uint8_t get_ticks_atomic() const {
-        /* Returning an uint8_t is atomic */
-        return ticks_;
-    }
-
-    bool operator>(const timer_t& rhs) const {
-        return (seconds_ > rhs.seconds_) or
-            (seconds_ == rhs.seconds_ and ticks_ > rhs.ticks_);
-    }
-
-    void normalise() {
-        while (ticks_ >= 10) {
-            seconds_++;
-            ticks_ -= 10;
-        }
-    }
-
-    timer_t operator+(const timer_t& rhs) const {
-        timer_t t;
-        t.seconds_ = seconds_ + rhs.seconds_;
-        t.ticks_ = ticks_ + rhs.ticks_;
-        t.normalise();
-        return t;
-    }
-
-    timer_t operator+(uint8_t ticks) const {
-        timer_t t = timer_t(0, ticks);
-        return *this + t;
-    }
-
-    void operator+=(const timer_t& inc) {
-        seconds_ += inc.seconds_;
-        ticks_ += inc.ticks_;
-        normalise();
-    }
-
-    void operator+=(uint8_t ticks) {
-        *this += timer_t(0, ticks);
-    }
-
-    static constexpr int ms_to_ticks(int ms) { return ms / 100; }
-};
+/* Capacity counters and thresholds, in As (= Coulombs)
+ *
+ * For every relay, define a threshold below which the
+ * relay should be active.
+ */
+constexpr double THRESHOLD_K1 = 1200.0 * 3600;
+constexpr double THRESHOLD_K2 = 1000.0 * 3600;
+constexpr double THRESHOLD_K3 = 600.0 * 3600;
+constexpr double MAX_CAPACITY = 1500.0 * 3600;
+uint32_t current_capacity;
 
 /* Storage of battery capacity in mC.
  * 3600 mC = 1mAh */
@@ -121,8 +69,6 @@ uint32_t last_store_time; /* In seconds */
 
 timer_t last_ltc2400_measure;
 timer_t last_ltc2400_print_time;
-
-uint32_t current_capacity;
 
 /* Timer at approximately 100ms.
  * Since this timer is updated in an ISR, care has to be taken
@@ -315,14 +261,16 @@ int main()
     while (true) {
         sleep_mode();
 
-        pins_set_status(system_timer.get_ticks_atomic() == 0);
+        const auto time_now = system_timer.get_atomic_copy();
 
-        if (last_store_time + 3600 * 5 >= system_timer.get_seconds_atomic()) {
+        pins_set_status(time_now.get_ticks_atomic() == 0);
+
+        if (last_store_time + 3600 * 5 >= time_now.seconds_) {
             store_capacity_to_eeprom();
         }
 
         constexpr auto ltc2400_measure_interval = timer_t::ms_to_ticks(100);
-        if (last_ltc2400_measure + ltc2400_measure_interval > system_timer.get_atomic_copy()) {
+        if (last_ltc2400_measure + ltc2400_measure_interval > time_now) {
             last_ltc2400_measure += ltc2400_measure_interval;
 
             if (ltc2400_conversion_ready()) {
@@ -341,12 +289,18 @@ int main()
                 /* Vout - 2.5V = Ishunt * Rshunt * 20 */
                 const double i_shunt = (adc_voltage - 2.5) / (20.0 * R_SHUNT);
                 accum += i_shunt * tick_interval;
+
+                if (accum < 0) { accum = 0; }
+                if (accum > MAX_CAPACITY) { accum = MAX_CAPACITY; }
+
                 current_capacity = lrint(accum);
+
+#warning "Handle thresholds for relays"
             }
         }
 
         const auto ltc2400_print_interval = timer_t(10, 0);
-        if (last_ltc2400_print_time + ltc2400_print_interval > system_timer.get_atomic_copy()) {
+        if (last_ltc2400_print_time + ltc2400_print_interval > time_now) {
             last_ltc2400_print_time += ltc2400_print_interval;
             send_capacity(current_capacity);
         }
