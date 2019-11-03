@@ -29,11 +29,11 @@
 #include <avr/interrupt.h>
 
 struct timer_t {
-    uint32_t seconds_ = 0; /* Timer in seconds */
-    uint8_t ticks_ = 0; /* Timer in 100ms steps */
+    uint32_t seconds_ = 0;
+    uint32_t microsecs_ = 0;
 
     timer_t() {}
-    timer_t(uint32_t seconds, uint8_t ticks) : seconds_(seconds), ticks_(ticks) {}
+    timer_t(uint32_t seconds, uint32_t microsecs) : seconds_(seconds), microsecs_(microsecs) {}
 
     timer_t get_atomic_copy() const {
         cli();
@@ -49,52 +49,47 @@ struct timer_t {
         return s;
     }
 
-    uint8_t get_ticks_atomic() const {
-        /* Returning an uint8_t is atomic */
-        return ticks_;
+    uint32_t get_microsecs_atomic() const {
+        cli();
+        uint32_t t = microsecs_;
+        sei();
+        return t;
     }
 
     bool operator>(const timer_t& rhs) const {
         return (seconds_ > rhs.seconds_) or
-            (seconds_ == rhs.seconds_ and ticks_ > rhs.ticks_);
+            (seconds_ == rhs.seconds_ and microsecs_ > rhs.microsecs_);
     }
 
     bool operator<(const timer_t& rhs) const {
         return (seconds_ < rhs.seconds_) or
-            (seconds_ == rhs.seconds_ and ticks_ < rhs.ticks_);
+            (seconds_ == rhs.seconds_ and microsecs_ < rhs.microsecs_);
     }
 
     void normalise() {
-        while (ticks_ >= 10) {
+        while (microsecs_ >= 1000000uL) {
             seconds_++;
-            ticks_ -= 10;
+            microsecs_ -= 1000000uL;
         }
     }
 
     timer_t operator+(const timer_t& rhs) const {
         timer_t t;
         t.seconds_ = seconds_ + rhs.seconds_;
-        t.ticks_ = ticks_ + rhs.ticks_;
+        t.microsecs_ = microsecs_ + rhs.microsecs_;
         t.normalise();
         return t;
     }
 
-    timer_t operator+(uint8_t ticks) const {
-        timer_t t = timer_t(0, ticks);
-        return *this + t;
-    }
-
     void operator+=(const timer_t& inc) {
         seconds_ += inc.seconds_;
-        ticks_ += inc.ticks_;
+        microsecs_ += inc.microsecs_;
         normalise();
     }
 
-    void operator+=(uint8_t ticks) {
-        *this += timer_t(0, ticks);
+    void operator+=(uint32_t mirosecs) {
+        *this += timer_t(0, mirosecs);
     }
-
-    static constexpr int ms_to_ticks(int ms) { return ms / 100; }
 };
 
 

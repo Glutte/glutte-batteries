@@ -84,9 +84,24 @@ timer_t last_ltc2400_measure;
 timer_t last_ltc2400_print_time;
 
 /* Timer at approximately 100ms.
- * Since this timer is updated in an ISR, care has to be taken
+ *
+ * Setup 100Hz timer, assuming F_CPU at 16MHz / 8:
+ *
+ * overflow for 100ms: F_CPU [ticks/s] / prescaler [unitless] * interval [s] = [ticks/s*s] = [ticks]
+ * interval [s] = 0.1 = 1 / 10
+ *
+ * Actual interval after rounding:
+ * interval [s] = overflow [ticks] / (F_CPU [ticks/s] / prescaler [unit-less])
+ *              = 99.84 ms
+ */
+constexpr uint8_t TIMER_OVERFLOW = (uint8_t)(F_CPU / 1024 / 10);
+constexpr double TIMER_TICK_INTERVAL = (double)TIMER_OVERFLOW / ((double)F_CPU / 1024.0); // == 0.099840 s
+constexpr uint32_t TIMER_TICK_INTERVAL_US = (uint32_t)(TIMER_TICK_INTERVAL * 1000000.0);
+
+/* Since this timer is updated in an ISR, care has to be taken
  * when reading it, because all operations involving variables
- * larger than 1 byte are not atomic on AVR. */
+ * larger than 1 byte are not atomic on AVR.
+ */
 static timer_t system_timer;
 
 /* At reset, save the mcusr register to find out why we got reset.
@@ -95,7 +110,7 @@ uint8_t mcusr_mirror __attribute__ ((section (".noinit")));
 
 ISR(TIMER0_COMPA_vect)
 {
-    system_timer += 1;
+    system_timer += timer_t{0, TIMER_TICK_INTERVAL_US};
 }
 
 enum class error_type_t {
@@ -248,23 +263,11 @@ int main()
     else {
         send_message("Startup");
     }
-
-    /* Setup 100Hz timer, assuming F_CPU at 16MHz / 8:
-     *
-     * overflow for 100ms: F_CPU [ticks/s] / prescaler [unit-less] * interval [s] = [ticks/s*s] = [ticks]
-     * interval [s] = 0.1 = 1 / 10
-     *
-     * Actual interval after rounding:
-     * interval [s] = overflow [ticks] / (F_CPU [ticks/s] / prescaler [unit-less])
-     *              = 99.84 ms
-     */
     system_timer = timer_t(0, 0);
     TCCR0B |= _BV(WGM02); // Set timer mode to CTC (datasheet 15.7.2)
     TIMSK0 |= _BV(TOIE0); // enable overflow interrupt
-    const uint8_t overflow = (uint8_t)(F_CPU / 1024 / 10); // Overflow at 99.84 ms
-    OCR0A = overflow;
+    OCR0A = TIMER_OVERFLOW;
     TCCR0B |= _BV(CS02) | _BV(CS00); // Start timer at Fcpu/1024
-    const double tick_interval = (double)overflow / ((double)F_CPU / 1024.0 / 10.0);
 
     /* Load capacity stored in EEPROM */
     current_capacity = 0;
@@ -287,13 +290,13 @@ int main()
 
         const auto time_now = system_timer.get_atomic_copy();
 
-        pins_set_status(time_now.get_ticks_atomic() == 0);
+        pins_set_status(time_now.get_microsecs_atomic() < 500000uL);
 
         if (last_store_time_seconds + 3600 * 5 >= time_now.seconds_) {
             store_capacity_to_eeprom();
         }
 
-        constexpr auto ltc2400_measure_interval = timer_t::ms_to_ticks(100);
+        const auto ltc2400_measure_interval = timer_t{0, 100000uL};
         if (last_ltc2400_measure + ltc2400_measure_interval > time_now) {
             last_ltc2400_measure += ltc2400_measure_interval;
 
@@ -312,7 +315,7 @@ int main()
 
                 /* Vout - 2.5V = Ishunt * Rshunt * 20 */
                 const double i_shunt = (adc_voltage - 2.5) / (20.0 * R_SHUNT);
-                accum += i_shunt * tick_interval;
+                accum += i_shunt * TIMER_TICK_INTERVAL;
 
                 if (accum < 0) { accum = 0; }
                 if (accum > MAX_CAPACITY) { accum = MAX_CAPACITY; }

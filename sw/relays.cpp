@@ -35,7 +35,7 @@ struct pending_event_t {
     bool pending;
 };
 
-static constexpr int RELAY_SIGNAL_HOLD_TIME_MS = 400;
+static constexpr int RELAY_SIGNAL_HOLD_TIME_US = 400000uL;
 
 static constexpr size_t PENDING_EVENTS_SIZE = 8;
 
@@ -119,7 +119,7 @@ bool relays_toggle(relay_id_t relay, bool set_not_reset, const timer_t& when)
             pending_events[i].pending = true;
             pending_events[i].relay = relay;
             pending_events[i].when = when +
-              timer_t{0, timer_t::ms_to_ticks(RELAY_SIGNAL_HOLD_TIME_MS)};
+              timer_t{0, RELAY_SIGNAL_HOLD_TIME_US};
 
             pending_events[i].level = false;
             pending_events[i].set_not_reset = set_not_reset;
