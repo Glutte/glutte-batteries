@@ -58,17 +58,18 @@ constexpr double THRESHOLD_K2 = 1000.0 * 3600;
 constexpr double THRESHOLD_K3 = 600.0 * 3600;
 constexpr double THRESHOLD_HYSTERESIS = 10.0 * 3600;
 
-constexpr double THRESHOLD_K1_UP = 1200.0 * 3600 - THRESHOLD_HYSTERESIS;
-constexpr double THRESHOLD_K2_UP = 1000.0 * 3600 - THRESHOLD_HYSTERESIS;
-constexpr double THRESHOLD_K3_UP = 600.0 * 3600 - THRESHOLD_HYSTERESIS;
+constexpr double THRESHOLD_K1_UP = 1200.0 * 3600 + THRESHOLD_HYSTERESIS;
+constexpr double THRESHOLD_K2_UP = 1000.0 * 3600 + THRESHOLD_HYSTERESIS;
+constexpr double THRESHOLD_K3_UP = 600.0 * 3600 + THRESHOLD_HYSTERESIS;
 
-constexpr double THRESHOLD_K1_DOWN = 1200.0 * 3600 + THRESHOLD_HYSTERESIS;
-constexpr double THRESHOLD_K2_DOWN = 1000.0 * 3600 + THRESHOLD_HYSTERESIS;
-constexpr double THRESHOLD_K3_DOWN = 600.0 * 3600 + THRESHOLD_HYSTERESIS;
+constexpr double THRESHOLD_K1_DOWN = 1200.0 * 3600 - THRESHOLD_HYSTERESIS;
+constexpr double THRESHOLD_K2_DOWN = 1000.0 * 3600 - THRESHOLD_HYSTERESIS;
+constexpr double THRESHOLD_K3_DOWN = 600.0 * 3600 - THRESHOLD_HYSTERESIS;
 
 constexpr double MAX_CAPACITY = 1500.0 * 3600;
 static uint32_t current_capacity;
 static uint32_t previous_capacity;
+static bool relay_state_known = false;
 
 /* Storage of battery capacity in mC.
  * 3600 mC = 1mAh */
@@ -119,6 +120,7 @@ enum class error_type_t {
     EEPROM_WRITE_ERROR,
     LTC2400_DMY_BIT_FAULT,
     LTC2400_EXTENDED_RANGE_ERROR,
+    RELAY_NOT_SET,
 };
 
 static void flag_error(const error_type_t e);
@@ -150,7 +152,6 @@ static void load_capacity_from_eeprom()
     else {
         flag_error(error_type_t::EEPROM_READ_ERROR);
         current_capacity = cap2; // arbitrary
-#warning "Have a meaningful value for the very first startup value"
     }
 
     previous_capacity = current_capacity;
@@ -169,9 +170,54 @@ static void store_capacity_to_eeprom()
     }
 }
 
-static void handle_thresholds()
+static void handle_thresholds(const timer_t& time_now)
 {
-#warning "compare previous_capacity and current_capacity to thresholds and toggle relays accordingly"
+    if (not relay_state_known) {
+        /* At bootup, ignore hysteresis. Put all relays in the state defined by the
+         * thresholds.
+         */
+        bool success = relays_toggle(relay_id_t::K1, current_capacity < THRESHOLD_K1, time_now);
+        success &= relays_toggle(relay_id_t::K2, current_capacity < THRESHOLD_K2, time_now);
+        success &= relays_toggle(relay_id_t::K3, current_capacity < THRESHOLD_K3, time_now);
+        relay_state_known = success;
+
+        if (not success) {
+            flag_error(error_type_t::RELAY_NOT_SET);
+        }
+    }
+    else {
+        bool success = true;
+
+        if (previous_capacity < THRESHOLD_K1_UP and current_capacity >= THRESHOLD_K1_UP) {
+            success &= relays_toggle(relay_id_t::K1, false, time_now);
+        }
+
+        if (previous_capacity > THRESHOLD_K1_DOWN and current_capacity <= THRESHOLD_K1_DOWN) {
+            success &= relays_toggle(relay_id_t::K1, true, time_now);
+        }
+
+        if (previous_capacity < THRESHOLD_K2_UP and current_capacity >= THRESHOLD_K2_UP) {
+            success &= relays_toggle(relay_id_t::K2, false, time_now);
+        }
+
+        if (previous_capacity > THRESHOLD_K2_DOWN and current_capacity <= THRESHOLD_K2_DOWN) {
+            success &= relays_toggle(relay_id_t::K2, true, time_now);
+        }
+
+        if (previous_capacity < THRESHOLD_K3_UP and current_capacity >= THRESHOLD_K3_UP) {
+            success &= relays_toggle(relay_id_t::K3, false, time_now);
+        }
+
+        if (previous_capacity > THRESHOLD_K3_DOWN and current_capacity <= THRESHOLD_K3_DOWN) {
+            success &= relays_toggle(relay_id_t::K3, true, time_now);
+        }
+
+        if (not success) {
+            flag_error(error_type_t::RELAY_NOT_SET);
+        }
+    }
+
+    previous_capacity = current_capacity;
 }
 
 static char timestamp_buf[16];
@@ -208,6 +254,9 @@ static void flag_error(const error_type_t e)
             break;
         case error_type_t::LTC2400_EXTENDED_RANGE_ERROR:
             uart_puts_P("LTC2400 extended range error" ENDL);
+            break;
+        case error_type_t::RELAY_NOT_SET:
+            uart_puts_P("RELAYS not set" ENDL);
             break;
     }
 }
@@ -327,7 +376,7 @@ int main()
         constexpr auto threshold_calculation_interval = 4;
         if (last_threshold_calculation_seconds + threshold_calculation_interval > time_now.seconds_) {
             last_threshold_calculation_seconds += threshold_calculation_interval;
-            handle_thresholds();
+            handle_thresholds(time_now);
         }
 
         const auto ltc2400_print_interval = timer_t(10, 0);
@@ -336,7 +385,7 @@ int main()
             send_capacity(current_capacity);
         }
 
-#warning "Add call to relays_handle"
+        relays_handle(time_now);
     }
 
     return 0;
