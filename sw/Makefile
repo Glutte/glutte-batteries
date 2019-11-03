@@ -23,6 +23,7 @@ BUILD_DIR=build
 APP_NAME = sw
 
 HEADERS = \
+		  pins.hpp \
 		  common.hpp \
 		  relays.hpp \
 		  lib/Arduino.h \

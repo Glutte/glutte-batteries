@@ -27,7 +27,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-#include "pins.h"
+#include "pins.hpp"
 
 void ltc2400_init();
 

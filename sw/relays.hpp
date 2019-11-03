@@ -26,4 +26,11 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include "common.hpp"
+
+void relays_init();
+
+void relays_handle(const timer_t& time_now);
+
+bool relays_toggle(relay_id_t relay, bool set_not_reset, const timer_t& when);
 

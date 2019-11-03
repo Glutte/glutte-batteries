@@ -26,6 +26,7 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <avr/interrupt.h>
 
 struct timer_t {
     uint32_t seconds_ = 0; /* Timer in seconds */
@@ -56,6 +57,11 @@ struct timer_t {
     bool operator>(const timer_t& rhs) const {
         return (seconds_ > rhs.seconds_) or
             (seconds_ == rhs.seconds_ and ticks_ > rhs.ticks_);
+    }
+
+    bool operator<(const timer_t& rhs) const {
+        return (seconds_ < rhs.seconds_) or
+            (seconds_ == rhs.seconds_ and ticks_ < rhs.ticks_);
     }
 
     void normalise() {
@@ -91,3 +97,9 @@ struct timer_t {
     static constexpr int ms_to_ticks(int ms) { return ms / 100; }
 };
 
+
+enum class relay_id_t {
+    K1,
+    K2,
+    K3,
+};

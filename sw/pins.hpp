@@ -91,9 +91,3 @@ inline void pins_set_status(bool enable)
     }
 }
 
-enum class relay_id_t {
-    K1,
-    K2,
-    K3,
-};
-

@@ -35,7 +35,8 @@
 #include <avr/wdt.h>
 
 #include "common.hpp"
-#include "pins.h"
+#include "pins.hpp"
+#include "relays.hpp"
 #include "ltc2400.h"
 
 extern "C" {
@@ -55,8 +56,19 @@ constexpr double R_SHUNT = 5e-3; // Ohm
 constexpr double THRESHOLD_K1 = 1200.0 * 3600;
 constexpr double THRESHOLD_K2 = 1000.0 * 3600;
 constexpr double THRESHOLD_K3 = 600.0 * 3600;
+constexpr double THRESHOLD_HYSTERESIS = 10.0 * 3600;
+
+constexpr double THRESHOLD_K1_UP = 1200.0 * 3600 - THRESHOLD_HYSTERESIS;
+constexpr double THRESHOLD_K2_UP = 1000.0 * 3600 - THRESHOLD_HYSTERESIS;
+constexpr double THRESHOLD_K3_UP = 600.0 * 3600 - THRESHOLD_HYSTERESIS;
+
+constexpr double THRESHOLD_K1_DOWN = 1200.0 * 3600 + THRESHOLD_HYSTERESIS;
+constexpr double THRESHOLD_K2_DOWN = 1000.0 * 3600 + THRESHOLD_HYSTERESIS;
+constexpr double THRESHOLD_K3_DOWN = 600.0 * 3600 + THRESHOLD_HYSTERESIS;
+
 constexpr double MAX_CAPACITY = 1500.0 * 3600;
-uint32_t current_capacity;
+static uint32_t current_capacity;
+static uint32_t previous_capacity;
 
 /* Storage of battery capacity in mC.
  * 3600 mC = 1mAh */
@@ -65,8 +77,9 @@ uint32_t current_capacity;
 uint32_t EEMEM stored_capacity1;
 uint32_t EEMEM stored_capacity2;
 uint32_t EEMEM stored_capacity3;
-uint32_t last_store_time; /* In seconds */
+uint32_t last_store_time_seconds;
 
+uint32_t last_threshold_calculation_seconds;
 timer_t last_ltc2400_measure;
 timer_t last_ltc2400_print_time;
 
@@ -124,6 +137,8 @@ static void load_capacity_from_eeprom()
         current_capacity = cap2; // arbitrary
 #warning "Have a meaningful value for the very first startup value"
     }
+
+    previous_capacity = current_capacity;
 }
 
 static void store_capacity_to_eeprom()
@@ -137,6 +152,11 @@ static void store_capacity_to_eeprom()
         eeprom_read_dword(&stored_capacity3) != current_capacity) {
         flag_error(error_type_t::EEPROM_WRITE_ERROR);
     }
+}
+
+static void handle_thresholds()
+{
+#warning "compare previous_capacity and current_capacity to thresholds and toggle relays accordingly"
 }
 
 static char timestamp_buf[16];
@@ -201,6 +221,8 @@ int main()
 
     pins_set_status(true);
 
+    relays_init();
+
     // Initialise SPI and LTC2400
     ltc2400_init();
 
@@ -247,8 +269,10 @@ int main()
     /* Load capacity stored in EEPROM */
     current_capacity = 0;
     load_capacity_from_eeprom();
-    last_ltc2400_print_time = last_ltc2400_measure = system_timer;
-    last_store_time = system_timer.get_seconds_atomic();
+    last_ltc2400_print_time =
+        last_ltc2400_measure = system_timer;
+    last_store_time_seconds =
+        last_threshold_calculation_seconds = system_timer.get_seconds_atomic();
 
     /* Enable interrupts */
     sei();
@@ -265,7 +289,7 @@ int main()
 
         pins_set_status(time_now.get_ticks_atomic() == 0);
 
-        if (last_store_time + 3600 * 5 >= time_now.seconds_) {
+        if (last_store_time_seconds + 3600 * 5 >= time_now.seconds_) {
             store_capacity_to_eeprom();
         }
 
@@ -294,9 +318,13 @@ int main()
                 if (accum > MAX_CAPACITY) { accum = MAX_CAPACITY; }
 
                 current_capacity = lrint(accum);
-
-#warning "Handle thresholds for relays"
             }
+        }
+
+        constexpr auto threshold_calculation_interval = 4;
+        if (last_threshold_calculation_seconds + threshold_calculation_interval > time_now.seconds_) {
+            last_threshold_calculation_seconds += threshold_calculation_interval;
+            handle_thresholds();
         }
 
         const auto ltc2400_print_interval = timer_t(10, 0);
@@ -304,6 +332,8 @@ int main()
             last_ltc2400_print_time += ltc2400_print_interval;
             send_capacity(current_capacity);
         }
+
+#warning "Add call to relays_handle"
     }
 
     return 0;
