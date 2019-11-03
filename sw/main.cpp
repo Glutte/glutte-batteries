@@ -78,11 +78,16 @@ static bool relay_state_known = false;
 uint32_t EEMEM stored_capacity1;
 uint32_t EEMEM stored_capacity2;
 uint32_t EEMEM stored_capacity3;
-uint32_t last_store_time_seconds;
 
+/* Store timestamp of previous execution of a subroutine.
+ * Subroutines scheduled in second intervals don't need to
+ * be stored as timer_t, to save some space and simplify
+ * the comparison.
+ */
+uint32_t last_store_time_seconds;
 uint32_t last_threshold_calculation_seconds;
+uint32_t last_ltc2400_print_time_seconds;
 timer_t last_ltc2400_measure;
-timer_t last_ltc2400_print_time;
 
 /* Timer at approximately 100ms.
  *
@@ -127,6 +132,9 @@ static void flag_error(const error_type_t e);
 
 static void load_capacity_from_eeprom()
 {
+    /* Store the same value three times to make
+     * a majority vote to detect errors
+     */
     uint32_t cap1 = eeprom_read_dword(&stored_capacity1);
     uint32_t cap2 = eeprom_read_dword(&stored_capacity2);
     uint32_t cap3 = eeprom_read_dword(&stored_capacity3);
@@ -229,9 +237,9 @@ static void send_message(const char *message)
     uart_puts_P(ENDL);
 }
 
-static void send_capacity(uint32_t capacity)
+static void send_capacity(uint32_t capacity, const timer_t& time)
 {
-    snprintf(timestamp_buf, 15, "CAPACITY,%ld,%ld" ENDL, system_timer.get_seconds_atomic(), capacity);
+    snprintf(timestamp_buf, 15, "CAPACITY,%ld,%ld" ENDL, time.get_seconds_atomic(), capacity);
     uart_puts(timestamp_buf);
 }
 
@@ -312,35 +320,44 @@ int main()
     else {
         send_message("Startup");
     }
+
     system_timer = timer_t(0, 0);
-    TCCR0B |= _BV(WGM02); // Set timer mode to CTC (datasheet 15.7.2)
-    TIMSK0 |= _BV(TOIE0); // enable overflow interrupt
-    OCR0A = TIMER_OVERFLOW;
-    TCCR0B |= _BV(CS02) | _BV(CS00); // Start timer at Fcpu/1024
 
     /* Load capacity stored in EEPROM */
     current_capacity = 0;
     load_capacity_from_eeprom();
-    last_ltc2400_print_time =
-        last_ltc2400_measure = system_timer;
+    last_ltc2400_measure = system_timer;
+
     last_store_time_seconds =
+        last_ltc2400_print_time_seconds =
         last_threshold_calculation_seconds = system_timer.get_seconds_atomic();
 
-    /* Enable interrupts */
+    /* Enable timer and interrupts */
+    TCCR0B |= _BV(WGM02); // Set timer mode to CTC (datasheet 15.7.2)
+    TIMSK0 |= _BV(TOIE0); // enable overflow interrupt
+    OCR0A = TIMER_OVERFLOW;
+    TCCR0B |= _BV(CS02) | _BV(CS00); // Start timer at Fcpu/1024
     sei();
 
     // Accumulate in floating point
-    double accum = current_capacity;
+    double capacity_accum = current_capacity;
 
     /* Put the CPU to sleep */
     set_sleep_mode(SLEEP_MODE_IDLE);
     while (true) {
         sleep_mode();
 
+        /* In every loop, access the system_timer only once, so that
+         * every loop has a well-defined time */
         const auto time_now = system_timer.get_atomic_copy();
 
-        pins_set_status(time_now.get_microsecs_atomic() < 500000uL);
+        // One second blink interval
+        pins_set_status(time_now.seconds_ % 2 == 0);
 
+        /* EEPROM has an endurance of at least 100'000 write/erase cycles.
+         * (Datasheet 8.4 EEPROM Data Memory)
+         * Storing every five hours gives us several years of endurance.
+         * */
         if (last_store_time_seconds + 3600 * 5 >= time_now.seconds_) {
             store_capacity_to_eeprom();
         }
@@ -364,25 +381,25 @@ int main()
 
                 /* Vout - 2.5V = Ishunt * Rshunt * 20 */
                 const double i_shunt = (adc_voltage - 2.5) / (20.0 * R_SHUNT);
-                accum += i_shunt * TIMER_TICK_INTERVAL;
+                capacity_accum += i_shunt * TIMER_TICK_INTERVAL;
 
-                if (accum < 0) { accum = 0; }
-                if (accum > MAX_CAPACITY) { accum = MAX_CAPACITY; }
+                if (capacity_accum < 0) { capacity_accum = 0; }
+                if (capacity_accum > MAX_CAPACITY) { capacity_accum = MAX_CAPACITY; }
 
-                current_capacity = lrint(accum);
+                current_capacity = lrint(capacity_accum);
             }
         }
 
-        constexpr auto threshold_calculation_interval = 4;
-        if (last_threshold_calculation_seconds + threshold_calculation_interval > time_now.seconds_) {
-            last_threshold_calculation_seconds += threshold_calculation_interval;
+        constexpr auto threshold_calculation_interval_s = 4;
+        if (last_threshold_calculation_seconds + threshold_calculation_interval_s > time_now.seconds_) {
+            last_threshold_calculation_seconds += threshold_calculation_interval_s;
             handle_thresholds(time_now);
         }
 
-        const auto ltc2400_print_interval = timer_t(10, 0);
-        if (last_ltc2400_print_time + ltc2400_print_interval > time_now) {
-            last_ltc2400_print_time += ltc2400_print_interval;
-            send_capacity(current_capacity);
+        constexpr auto ltc2400_print_interval_s = 10;
+        if (last_ltc2400_print_time_seconds + ltc2400_print_interval_s > time_now.seconds_) {
+            last_ltc2400_print_time_seconds += ltc2400_print_interval_s;
+            send_capacity(current_capacity, time_now);
         }
 
         relays_handle(time_now);
