@@ -422,14 +422,14 @@ int main()
 
                 if (exr_fault) {
                     flag_error(error_type_t::LTC2400_EXTENDED_RANGE_ERROR);
-
-                    snprintf(timestamp_buf, sizeof(timestamp_buf), "DBG,%ld" ENDL, adc_value);
-                    uart_puts(timestamp_buf);
                 }
 
                 /* Vout - 2.5V = Ishunt * Rshunt * 20 */
                 const double i_shunt = (adc_voltage - 2.5) / (20.0 * R_SHUNT);
                 capacity_accum += i_shunt * TIMER_TICK_INTERVAL;
+
+                snprintf(timestamp_buf, sizeof(timestamp_buf), "DBG,%ld mA" ENDL, lrint(i_shunt * 1000.0));
+                uart_puts(timestamp_buf);
 
                 if (capacity_accum < 0) { capacity_accum = 0; }
                 if (capacity_accum > MAX_CAPACITY) { capacity_accum = MAX_CAPACITY; }

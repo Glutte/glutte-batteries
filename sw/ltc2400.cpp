@@ -110,17 +110,21 @@ void ltc2400_init()
     sei();
 }
 
-int ltc2400_conversion_ready()
+bool ltc2400_conversion_ready()
 {
+    return true;
+#warning "Clarify usage of SS"
+
     cs_low();
     // EOC == 0 means conversion is complete and device in sleep mode
     const int eoc = (PORTB & PINB_SPI_MISO) ? 0 : 1;
+
     cs_high();
 
     return eoc;
 }
 
-float ltc2400_get_conversion_result(bool& dmy_fault, bool& exr_fault, uint32_t& adc_value)
+float ltc2400_get_conversion_result(bool& dmy_fault, bool& exr_fault, uint32_t& raw_value)
 {
     cs_low();
 
@@ -135,17 +139,17 @@ float ltc2400_get_conversion_result(bool& dmy_fault, bool& exr_fault, uint32_t& 
 
     cs_high();
 
-    const uint32_t result =
-        ((uint32_t)data[3] << 24) |
-        ((uint32_t)data[2] << 16) |
-        ((uint32_t)data[1] << 8) |
-        ((uint32_t)data[0]);
+    raw_value =
+        ((uint32_t)data[0] << 24) |
+        ((uint32_t)data[1] << 16) |
+        ((uint32_t)data[2] << 8) |
+        ((uint32_t)data[3]);
 
-    dmy_fault = result & _BV(30);
-    exr_fault = not (result & _BV(28));
+    dmy_fault = raw_value & (1uL << 30);
+    exr_fault = raw_value & (1uL << 28);
 
     // Mask 4 MSB status bits, and shift out 4 sub-LSB bits
-    adc_value = (result >> 4) & 0x00FFFFFF;
+    const uint32_t adc_value = (raw_value >> 4) & 0x00FFFFFF;
 
     // Convert ADC value to voltage
     return ((float)adc_value) / ((float)0x00FFFFFF) / 5.0f;
