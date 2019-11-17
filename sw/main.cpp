@@ -136,7 +136,7 @@ static timer_t system_timer;
  * Datasheet 11.9.1, example code from wdt.h */
 uint8_t mcusr_mirror __attribute__ ((section (".noinit")));
 
-ISR(TIMER0_COMPA_vect)
+ISR(TIMER0_OVF_vect)
 {
     system_timer += timer_t{0, TIMER_TICK_INTERVAL_US};
 }
