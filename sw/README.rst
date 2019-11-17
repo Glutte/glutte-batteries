@@ -10,6 +10,8 @@ Au démarrage, avant de passer à la mesure régulière, le code doit:
   - Faire une vérification lecture après écriture et communiquer le problème
 - Mettre en place un watchdog
 - Initialiser UART (uniquement TX, on verra si on a besoin du RX plus tard)
+- Configurer SPI pour le LTC2400
+- Initialiser entrées analogiques et mesurer tension batterie
 
 Protocole du port série
 -----------------------
@@ -23,6 +25,8 @@ secondes, une virgule, un champ de données, et termine par CR LF.
 | `TEXT`             | Un message informatif             |
 | `ERROR`            | Erreur ou avertissement           |
 | `CAPACITY`         | Une valeur en mAh                 |
+| `VBAT+`            | Une valeur en mV                  |
+| `VBAT-`            | Une valeur en mV                  |
 +--------------------+-----------------------------------+
 
 Par exemple: `TEXT,12,Startup\r\n`
@@ -31,10 +35,6 @@ TODO
 ----
 
 - Definir le comportement par defaut au démarrage, pas de glitch!
-- Configurer SPI pour LTC2400
-  - Le code exemple utilise arduino et Wire.h
-- Initialiser entrées analogiques
-  - Mesurer tension batterie
 - Initialiser DS18B20
 
 

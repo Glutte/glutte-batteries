@@ -84,10 +84,32 @@ uint32_t EEMEM stored_capacity3;
  * be stored as timer_t, to save some space and simplify
  * the comparison.
  */
-uint32_t last_store_time_seconds;
-uint32_t last_threshold_calculation_seconds;
-uint32_t last_ltc2400_print_time_seconds;
-timer_t last_ltc2400_measure;
+static uint32_t last_store_time_seconds;
+static uint32_t last_threshold_calculation_seconds;
+static uint32_t last_ltc2400_print_time_seconds;
+static timer_t last_ltc2400_measure;
+
+enum class adc_state_t {
+    IDLE,
+    PENDING_ADC0,
+    PENDING_ADC1,
+};
+
+static adc_state_t adc_state;
+static uint32_t last_adc_measure_time_seconds;
+
+/* Raw values from the ADC.
+ * The ADC converts an analog input voltage to a 10-bit digital value through
+ * successive approximation. The minimum value represents GND and the maximum
+ * value represents the voltage on the AREF pin minus 1 LSB.
+ * (datasheet 24.2)
+ */
+const uint32_t V_REF_mV = 5000;
+
+#define ADC_VALUE_TO_MILLIVOLT(val) ((uint32_t)val * V_REF_mV) / (uint32_t)(1<<10)
+
+// Use the LDO on Vref as ADC reference, set REFS1..REFS0 = 0b00, and ADC input 0
+#define SET_ADMUX(input) ADMUX = _BV(REFS0) | _BV(REFS1) | input
 
 /* Timer at approximately 100ms.
  *
@@ -243,6 +265,14 @@ static void send_capacity(uint32_t capacity, const timer_t& time)
     uart_puts(timestamp_buf);
 }
 
+static void send_voltage(uint32_t millivolts, bool bat_plus, const timer_t& time)
+{
+    snprintf(timestamp_buf, 15, "VBAT%c,%ld,%ld" ENDL,
+            bat_plus ? '+' : '-',
+            time.get_seconds_atomic(), millivolts);
+    uart_puts(timestamp_buf);
+}
+
 static void flag_error(const error_type_t e)
 {
     snprintf(timestamp_buf, 15, "ERROR,%ld,", system_timer.get_seconds_atomic());
@@ -298,8 +328,9 @@ int main()
     // Initialise SPI and LTC2400
     ltc2400_init();
 
-    // Use the LDO on Vref as ADC reference, set REFS1..REFS0 = 0b00
-    ADMUX &= ~(_BV(REFS0) | _BV(REFS1));
+    // Enable ADC
+    ADCSRA |= _BV(ADEN);
+    SET_ADMUX(0);
 
     // Warning: Bi-stable relays are still in unknown state!
 
@@ -330,7 +361,10 @@ int main()
 
     last_store_time_seconds =
         last_ltc2400_print_time_seconds =
+        last_adc_measure_time_seconds =
         last_threshold_calculation_seconds = system_timer.get_seconds_atomic();
+
+    adc_state = adc_state_t::IDLE;
 
     /* Enable timer and interrupts */
     TCCR0B |= _BV(WGM02); // Set timer mode to CTC (datasheet 15.7.2)
@@ -400,6 +434,45 @@ int main()
         if (last_ltc2400_print_time_seconds + ltc2400_print_interval_s > time_now.seconds_) {
             last_ltc2400_print_time_seconds += ltc2400_print_interval_s;
             send_capacity(current_capacity, time_now);
+        }
+
+
+        // Input is divided by 4 by LM324. ADC is 10-bit,
+        // value 0 is GND, value (1<<10) is Vref
+        constexpr auto adc_interval_s = 20;
+        switch (adc_state) {
+            case adc_state_t::IDLE:
+                if (last_adc_measure_time_seconds + adc_interval_s > time_now.seconds_) {
+                    last_adc_measure_time_seconds += adc_interval_s;
+                    SET_ADMUX(0);
+                    // Start ADC conversion
+                    ADCSRA |= _BV(ADSC);
+                    adc_state = adc_state_t::PENDING_ADC0;
+                }
+                break;
+            case adc_state_t::PENDING_ADC0:
+                // ADSC is cleared when the conversion finishes
+                if ((ADCSRA & ADSC) == 0) {
+                    // BAT+
+                    const uint16_t adc_value_0 = ((uint16_t)ADCH << 8) | ADCL;
+                    send_voltage(ADC_VALUE_TO_MILLIVOLT(adc_value_0) * 4, true, time_now);
+                    SET_ADMUX(1);
+                    // Start ADC conversion
+                    ADCSRA |= _BV(ADSC);
+
+                    adc_state = adc_state_t::PENDING_ADC1;
+                }
+                break;
+            case adc_state_t::PENDING_ADC1:
+                // ADSC is cleared when the conversion finishes
+                if ((ADCSRA & ADSC) == 0) {
+                    // BAT-
+                    const uint16_t adc_value_1 = ((uint16_t)ADCH << 8) | ADCL;
+                    adc_state = adc_state_t::IDLE;
+
+                    send_voltage(ADC_VALUE_TO_MILLIVOLT(adc_value_1) * 4, false, time_now);
+                }
+                break;
         }
 
         relays_handle(time_now);
