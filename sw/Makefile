@@ -122,10 +122,13 @@ program: $(APP_HEX)
 	$(AVRDUDE) $(AVRDUDE_FLAGS) -c $(PROG) -P $(AVRDUDE_DEV) -p $(AVRDUDE_PART) -U flash:w:$(BUILD_DIR)/$(APP_HEX) -v
 
 fuse:
-	$(AVRDUDE) $(AVRDUDE_FLAGS) -c $(PROG) -P $(AVRDUDE_DEV) -p $(AVRDUDE_PART) -U lfuse:w:0x60:m -U hfuse:w:0xdc:m -U efuse:w:0xff:m -v
+	$(AVRDUDE) $(AVRDUDE_FLAGS) -c $(PROG) -P $(AVRDUDE_DEV) -p $(AVRDUDE_PART) -U lfuse:w:0x7e:m -U hfuse:w:0xd9:m -U efuse:w:0xfc:m -v
 
 interactive:
 	$(AVRDUDE) $(AVRDUDE_FLAGS) -c $(PROG) -P $(AVRDUDE_DEV) -p $(AVRDUDE_PART) -t -v
+
+help:
+	@echo "targets: all, program, fuse, interactive"
 
 doxygen:
 	doxygen ./Doxyfile

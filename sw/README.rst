@@ -41,11 +41,11 @@ TODO
 Reglages eFuse
 --------------
 
-- Low: Horloge externe, diviseur /8 actif
+- Low: Horloge crystal 8MHz ou plus, Startup time PWRDWN/RESET 1K/14CK + 4.1ms, diviseur /8 actif
 - High: tout par défaut
 - Ext: Brownout detector: 4.3V
 
-Commande AVRdude equivalente: `-U lfuse:w:0x50:m -U hfuse:w:0xd9:m -U efuse:w:0xfc:m`
+Commande AVRdude equivalente: `-U lfuse:w:0x7e:m -U hfuse:w:0xd9:m -U efuse:w:0xfc:m`
 
 Acknowledgements
 ================
