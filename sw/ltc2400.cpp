@@ -86,10 +86,10 @@ void ltc2400_init()
 {
     cli();
 
-    // Set bit order=MSB first (DORD=0)
-    // And SPI mode=0 (CPOL=0, CPHA=0)
-    SPCR &= ~(_BV(DORD) | _BV(CPOL) | _BV(CPHA));
-
+    // Set SPI Enable and Master mode,
+    // bit order=MSB first (DORD=0),
+    // SPI mode=0 (CPOL=0, CPHA=0)
+    //
     // clock divider:
     // SPR1 and SPR0 are the two LSB bits in SPCR
     // SPR1 SPR0 ~SPI2X Freq
@@ -102,11 +102,10 @@ void ltc2400_init()
     //   0    1     1   fosc/16
     //   1    0     1   fosc/64
     //   1    1     1   fosc/128
-
-    constexpr uint8_t SPI_CLOCK_MASK = 0x03;  // SPR1 = bit 1, SPR0 = bit 0 on SPCR
-    constexpr uint8_t SPI_2XCLOCK_MASK = 0x01;  // SPI2X = bit 0 on SPSR
-    SPCR = (SPCR & ~SPI_CLOCK_MASK) | (SPR1 & SPI_CLOCK_MASK);
-    SPSR = (SPSR & ~SPI_2XCLOCK_MASK); // clear SPI2X
+    //
+    // Set SPR1 for /32
+    SPCR = _BV(SPE) | _BV(MSTR) | _BV(SPR1);
+    SPSR = 0; // clear SPI2X
 
     sei();
 }

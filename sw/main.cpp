@@ -395,16 +395,19 @@ int main()
         // One second blink interval
         pins_set_status(time_now.seconds_ % 2 == 0);
 
+#if 0
         /* EEPROM has an endurance of at least 100'000 write/erase cycles.
          * (Datasheet 8.4 EEPROM Data Memory)
          * Storing every five hours gives us several years of endurance.
          * */
-        if (last_store_time_seconds + 3600 * 5 >= time_now.seconds_) {
+        if (last_store_time_seconds + 3600 * 5 <= time_now.seconds_) {
+            send_debug("Store to EEPROM");
             store_capacity_to_eeprom();
         }
+#endif
 
         const auto ltc2400_measure_interval = timer_t{0, 100000uL};
-        if (last_ltc2400_measure + ltc2400_measure_interval > time_now) {
+        if (last_ltc2400_measure + ltc2400_measure_interval < time_now) {
             last_ltc2400_measure += ltc2400_measure_interval;
 
             if (ltc2400_conversion_ready()) {
@@ -432,14 +435,16 @@ int main()
         }
 
         constexpr auto threshold_calculation_interval_s = 4;
-        if (last_threshold_calculation_seconds + threshold_calculation_interval_s > time_now.seconds_) {
+        if (last_threshold_calculation_seconds + threshold_calculation_interval_s < time_now.seconds_) {
             last_threshold_calculation_seconds += threshold_calculation_interval_s;
+
             send_debug("Calc thresh");
             handle_thresholds(time_now);
         }
 
+
         constexpr auto ltc2400_print_interval_s = 10;
-        if (last_ltc2400_print_time_seconds + ltc2400_print_interval_s > time_now.seconds_) {
+        if (last_ltc2400_print_time_seconds + ltc2400_print_interval_s < time_now.seconds_) {
             last_ltc2400_print_time_seconds += ltc2400_print_interval_s;
             send_capacity(current_capacity, time_now);
         }
@@ -449,7 +454,7 @@ int main()
         constexpr auto adc_interval_s = 20;
         switch (adc_state) {
             case adc_state_t::IDLE:
-                if (last_adc_measure_time_seconds + adc_interval_s > time_now.seconds_) {
+                if (last_adc_measure_time_seconds + adc_interval_s < time_now.seconds_) {
                     send_debug("ADC meas");
                     last_adc_measure_time_seconds += adc_interval_s;
                     SET_ADMUX(0);
