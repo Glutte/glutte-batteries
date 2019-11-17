@@ -250,10 +250,10 @@ static void handle_thresholds(const timer_t& time_now)
     previous_capacity = current_capacity;
 }
 
-static char timestamp_buf[16];
+static char timestamp_buf[24];
 static void send_message(const char *message)
 {
-    snprintf(timestamp_buf, 15, "TEXT,%ld,", system_timer.get_seconds_atomic());
+    snprintf(timestamp_buf, sizeof(timestamp_buf), "TEXT,%ld,", system_timer.get_seconds_atomic());
     uart_puts(timestamp_buf);
     uart_puts(message);
     uart_puts_P(ENDL);
@@ -263,13 +263,13 @@ static void send_message(const char *message)
 
 static void send_capacity(uint32_t capacity, const timer_t& time)
 {
-    snprintf(timestamp_buf, 15, "CAPACITY,%ld,%ld" ENDL, time.get_seconds_atomic(), capacity);
+    snprintf(timestamp_buf, sizeof(timestamp_buf), "CAPA,%ld,%ld" ENDL, time.get_seconds_atomic(), capacity);
     uart_puts(timestamp_buf);
 }
 
 static void send_voltage(uint32_t millivolts, bool bat_plus, const timer_t& time)
 {
-    snprintf(timestamp_buf, 15, "VBAT%c,%ld,%ld" ENDL,
+    snprintf(timestamp_buf, sizeof(timestamp_buf), "VBAT%c,%ld,%ld" ENDL,
             bat_plus ? '+' : '-',
             time.get_seconds_atomic(), millivolts);
     uart_puts(timestamp_buf);
@@ -277,7 +277,7 @@ static void send_voltage(uint32_t millivolts, bool bat_plus, const timer_t& time
 
 static void flag_error(const error_type_t e)
 {
-    snprintf(timestamp_buf, 15, "ERROR,%ld,", system_timer.get_seconds_atomic());
+    snprintf(timestamp_buf, sizeof(timestamp_buf), "ERROR,%ld,", system_timer.get_seconds_atomic());
     uart_puts(timestamp_buf);
     switch (e) {
         case error_type_t::EEPROM_READ_WARNING:
