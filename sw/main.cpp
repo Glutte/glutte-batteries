@@ -259,6 +259,8 @@ static void send_message(const char *message)
     uart_puts_P(ENDL);
 }
 
+#define send_debug(x) send_message(x)
+
 static void send_capacity(uint32_t capacity, const timer_t& time)
 {
     snprintf(timestamp_buf, 15, "CAPACITY,%ld,%ld" ENDL, time.get_seconds_atomic(), capacity);
@@ -357,6 +359,7 @@ int main()
     /* Load capacity stored in EEPROM */
     current_capacity = 0;
     load_capacity_from_eeprom();
+    send_debug("Load from EEPROM done");
     last_ltc2400_measure = system_timer;
 
     last_store_time_seconds =
@@ -372,14 +375,18 @@ int main()
     OCR0A = TIMER_OVERFLOW;
     TCCR0B |= _BV(CS02) | _BV(CS00); // Start timer at Fcpu/1024
     sei();
+    send_debug("Timer started");
 
     // Accumulate in floating point
     double capacity_accum = current_capacity;
 
     /* Put the CPU to sleep */
     set_sleep_mode(SLEEP_MODE_IDLE);
+
+    send_debug("Sleep configured");
     while (true) {
         sleep_mode();
+        wdt_reset();
 
         /* In every loop, access the system_timer only once, so that
          * every loop has a well-defined time */
@@ -427,6 +434,7 @@ int main()
         constexpr auto threshold_calculation_interval_s = 4;
         if (last_threshold_calculation_seconds + threshold_calculation_interval_s > time_now.seconds_) {
             last_threshold_calculation_seconds += threshold_calculation_interval_s;
+            send_debug("Calc thresh");
             handle_thresholds(time_now);
         }
 
@@ -436,13 +444,13 @@ int main()
             send_capacity(current_capacity, time_now);
         }
 
-
         // Input is divided by 4 by LM324. ADC is 10-bit,
         // value 0 is GND, value (1<<10) is Vref
         constexpr auto adc_interval_s = 20;
         switch (adc_state) {
             case adc_state_t::IDLE:
                 if (last_adc_measure_time_seconds + adc_interval_s > time_now.seconds_) {
+                    send_debug("ADC meas");
                     last_adc_measure_time_seconds += adc_interval_s;
                     SET_ADMUX(0);
                     // Start ADC conversion
