@@ -33,4 +33,4 @@ void ltc2400_init();
 
 int ltc2400_conversion_ready();
 
-float ltc2400_get_conversion_result(bool& dmy_fault, bool& exr_fault);
+float ltc2400_get_conversion_result(bool& dmy_fault, bool& exr_fault, uint32_t& adc_value);

@@ -413,7 +413,8 @@ int main()
             if (ltc2400_conversion_ready()) {
                 bool dmy_fault = false;
                 bool exr_fault = false;
-                const float adc_voltage = ltc2400_get_conversion_result(dmy_fault, exr_fault);
+                uint32_t adc_value = 0;
+                const float adc_voltage = ltc2400_get_conversion_result(dmy_fault, exr_fault, adc_value);
 
                 if (dmy_fault) {
                     flag_error(error_type_t::LTC2400_DMY_BIT_FAULT);
@@ -421,6 +422,9 @@ int main()
 
                 if (exr_fault) {
                     flag_error(error_type_t::LTC2400_EXTENDED_RANGE_ERROR);
+
+                    snprintf(timestamp_buf, sizeof(timestamp_buf), "DBG,%ld" ENDL, adc_value);
+                    uart_puts(timestamp_buf);
                 }
 
                 /* Vout - 2.5V = Ishunt * Rshunt * 20 */
@@ -437,11 +441,8 @@ int main()
         constexpr auto threshold_calculation_interval_s = 4;
         if (last_threshold_calculation_seconds + threshold_calculation_interval_s < time_now.seconds_) {
             last_threshold_calculation_seconds += threshold_calculation_interval_s;
-
-            send_debug("Calc thresh");
             handle_thresholds(time_now);
         }
-
 
         constexpr auto ltc2400_print_interval_s = 10;
         if (last_ltc2400_print_time_seconds + ltc2400_print_interval_s < time_now.seconds_) {
@@ -455,7 +456,6 @@ int main()
         switch (adc_state) {
             case adc_state_t::IDLE:
                 if (last_adc_measure_time_seconds + adc_interval_s < time_now.seconds_) {
-                    send_debug("ADC meas");
                     last_adc_measure_time_seconds += adc_interval_s;
                     SET_ADMUX(0);
                     // Start ADC conversion

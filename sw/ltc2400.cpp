@@ -120,7 +120,7 @@ int ltc2400_conversion_ready()
     return eoc;
 }
 
-float ltc2400_get_conversion_result(bool& dmy_fault, bool& exr_fault)
+float ltc2400_get_conversion_result(bool& dmy_fault, bool& exr_fault, uint32_t& adc_value)
 {
     cs_low();
 
@@ -145,7 +145,7 @@ float ltc2400_get_conversion_result(bool& dmy_fault, bool& exr_fault)
     exr_fault = not (result & _BV(28));
 
     // Mask 4 MSB status bits, and shift out 4 sub-LSB bits
-    const uint32_t adc_value = (result >> 4) & 0x00FFFFFF;
+    adc_value = (result >> 4) & 0x00FFFFFF;
 
     // Convert ADC value to voltage
     return ((float)adc_value) / ((float)0x00FFFFFF) / 5.0f;
