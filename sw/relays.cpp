@@ -35,7 +35,7 @@ struct pending_event_t {
     bool pending;
 };
 
-static constexpr int RELAY_SIGNAL_HOLD_TIME_US = 400000uL;
+static constexpr uint32_t RELAY_SIGNAL_HOLD_TIME_US = 400000uL;
 
 static constexpr size_t PENDING_EVENTS_SIZE = 8;
 
