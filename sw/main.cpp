@@ -46,7 +46,7 @@ extern "C" {
 // UART endline is usually CR LF
 #define ENDL "\r\n"
 
-constexpr double R_SHUNT = 5e-3; // Ohm
+constexpr double R_SHUNT = 1e-3; // Ohm
 
 /* Capacity counters and thresholds, in As (= Coulombs)
  *
@@ -145,6 +145,7 @@ enum class error_type_t {
     EEPROM_READ_WARNING,
     EEPROM_READ_ERROR,
     EEPROM_WRITE_ERROR,
+    LTC2400_NOT_READY,
     LTC2400_DMY_BIT_FAULT,
     LTC2400_EXTENDED_RANGE_ERROR,
     RELAY_NOT_SET,
@@ -250,7 +251,7 @@ static void handle_thresholds(const timer_t& time_now)
     previous_capacity = current_capacity;
 }
 
-static char timestamp_buf[24];
+static char timestamp_buf[32];
 static void send_message(const char *message)
 {
     snprintf(timestamp_buf, sizeof(timestamp_buf), "TEXT,%ld,", system_timer.get_seconds_atomic());
@@ -288,6 +289,9 @@ static void flag_error(const error_type_t e)
             break;
         case error_type_t::EEPROM_WRITE_ERROR:
             uart_puts_P("EEPRON write error" ENDL);
+            break;
+        case error_type_t::LTC2400_NOT_READY:
+            uart_puts_P("LTC2400 not ready" ENDL);
             break;
         case error_type_t::LTC2400_DMY_BIT_FAULT:
             uart_puts_P("LTC2400 DMY bit error" ENDL);
@@ -405,8 +409,7 @@ int main()
             store_capacity_to_eeprom();
         }
 #endif
-
-        const auto ltc2400_measure_interval = timer_t{0, 100000uL};
+        const auto ltc2400_measure_interval = timer_t{0, 200000uL};
         if (last_ltc2400_measure + ltc2400_measure_interval < time_now) {
             last_ltc2400_measure += ltc2400_measure_interval;
 
@@ -414,7 +417,7 @@ int main()
                 bool dmy_fault = false;
                 bool exr_fault = false;
                 uint32_t adc_value = 0;
-                const float adc_voltage = ltc2400_get_conversion_result(dmy_fault, exr_fault, adc_value);
+                const double adc_voltage = ltc2400_get_conversion_result(dmy_fault, exr_fault, adc_value);
 
                 if (dmy_fault) {
                     flag_error(error_type_t::LTC2400_DMY_BIT_FAULT);
@@ -426,15 +429,20 @@ int main()
 
                 /* Vout - 2.5V = Ishunt * Rshunt * 20 */
                 const double i_shunt = (adc_voltage - 2.5) / (20.0 * R_SHUNT);
-                capacity_accum += i_shunt * TIMER_TICK_INTERVAL;
+                capacity_accum += i_shunt * ltc2400_measure_interval.microsecs_ * 1e-6;
 
-                snprintf(timestamp_buf, sizeof(timestamp_buf), "DBG,%ld mA" ENDL, lrint(i_shunt * 1000.0));
+                snprintf(timestamp_buf, sizeof(timestamp_buf), "DBG,%ldmV,%ldmA" ENDL,
+                        lrint(adc_voltage * 1e3),
+                        lrint(i_shunt * 1e3));
                 uart_puts(timestamp_buf);
 
                 if (capacity_accum < 0) { capacity_accum = 0; }
                 if (capacity_accum > MAX_CAPACITY) { capacity_accum = MAX_CAPACITY; }
 
                 current_capacity = lrint(capacity_accum);
+            }
+            else {
+                flag_error(error_type_t::LTC2400_NOT_READY);
             }
         }
 

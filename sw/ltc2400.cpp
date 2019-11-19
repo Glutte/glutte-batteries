@@ -66,6 +66,7 @@
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include <util/delay.h>
 #include "ltc2400.h"
 
 static void cs_low()
@@ -82,10 +83,9 @@ static void cs_high()
     sei();
 }
 
-void ltc2400_init()
+static void spi_en()
 {
     cli();
-
     // Set SPI Enable and Master mode,
     // bit order=MSB first (DORD=0),
     // SPI mode=0 (CPOL=0, CPHA=0)
@@ -103,30 +103,45 @@ void ltc2400_init()
     //   1    0     1   fosc/64
     //   1    1     1   fosc/128
     //
-    // Set SPR1 for /32
-    SPCR = _BV(SPE) | _BV(MSTR) | _BV(SPR1);
+    // Set SPR0 for /8
+    SPCR = _BV(SPE) | _BV(MSTR) | _BV(SPR0);
     SPSR = 0; // clear SPI2X
+    sei();
+}
 
+static void spi_dis()
+{
+    cli();
+    PORTB &= ~PINB_SPI_SCK;
+    SPCR = _BV(MSTR) | _BV(SPR1);
+    sei();
+}
+
+void ltc2400_init()
+{
+    cli();
+    PORTB |= PINB_SPI_LTC_CSn;
+    // Ensure CLK is low so that the device doesn't enter internal SCK mode
+    PORTB &= ~PINB_SPI_SCK;
     sei();
 }
 
 bool ltc2400_conversion_ready()
 {
-    return true;
-#warning "Clarify usage of SS"
-
     cs_low();
+
+    _delay_us(100);
+
     // EOC == 0 means conversion is complete and device in sleep mode
-    const int eoc = (PORTB & PINB_SPI_MISO) ? 0 : 1;
-
-    cs_high();
-
-    return eoc;
+    return not (PINB & PINB_SPI_MISO);
 }
 
-float ltc2400_get_conversion_result(bool& dmy_fault, bool& exr_fault, uint32_t& raw_value)
+double ltc2400_get_conversion_result(bool& dmy_fault, bool& exr_fault, uint32_t& raw_value)
 {
+    spi_en();
     cs_low();
+
+    _delay_us(100);
 
     uint8_t data[4] = {};
 
@@ -137,6 +152,7 @@ float ltc2400_get_conversion_result(bool& dmy_fault, bool& exr_fault, uint32_t& 
         data[i] = SPDR;
     }
 
+    spi_dis();
     cs_high();
 
     raw_value =
@@ -152,6 +168,6 @@ float ltc2400_get_conversion_result(bool& dmy_fault, bool& exr_fault, uint32_t& 
     const uint32_t adc_value = (raw_value >> 4) & 0x00FFFFFF;
 
     // Convert ADC value to voltage
-    return ((float)adc_value) / ((float)0x00FFFFFF) / 5.0f;
+    return (double)adc_value / ((double)0x00FFFFFF / 5.0f);
 }
 

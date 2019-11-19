@@ -119,7 +119,7 @@ clean:
 # Send to device
 program: $(APP_HEX)
 	$(SIZE) -C $(BUILD_DIR)/$(APP_ELF)
-	$(AVRDUDE) $(AVRDUDE_FLAGS) -c $(PROG) -P $(AVRDUDE_DEV) -p $(AVRDUDE_PART) -U flash:w:$(BUILD_DIR)/$(APP_HEX) -v
+	$(AVRDUDE) $(AVRDUDE_FLAGS) -c $(PROG) -P $(AVRDUDE_DEV) -p $(AVRDUDE_PART) -U flash:w:$(BUILD_DIR)/$(APP_HEX) -v -B 8
 
 fuse:
 	$(AVRDUDE) $(AVRDUDE_FLAGS) -c $(PROG) -P $(AVRDUDE_DEV) -p $(AVRDUDE_PART) -U lfuse:w:0x7e:m -U hfuse:w:0xd9:m -U efuse:w:0xfc:m -v
