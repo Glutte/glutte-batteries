@@ -268,10 +268,15 @@ static void send_capacity(uint32_t capacity, const timer_t& time)
     uart_puts(timestamp_buf);
 }
 
-static void send_voltage(uint32_t millivolts, bool bat_plus, const timer_t& time)
+enum class adc_voltage_id {
+    V_BAT_PLUS,
+    V_BAT_MINUS,
+};
+
+static void send_voltage(uint32_t millivolts, adc_voltage_id voltage_id, const timer_t& time)
 {
     snprintf(timestamp_buf, sizeof(timestamp_buf), "VBAT%c,%ld,%ld" ENDL,
-            bat_plus ? '+' : '-',
+            voltage_id == adc_voltage_id::V_BAT_PLUS ? '+' : '-',
             time.get_seconds_atomic(), millivolts);
     uart_puts(timestamp_buf);
 }
@@ -476,7 +481,7 @@ int main()
                 if ((ADCSRA & ADSC) == 0) {
                     // BAT+
                     const uint16_t adc_value_0 = ((uint16_t)ADCH << 8) | ADCL;
-                    send_voltage(ADC_VALUE_TO_MILLIVOLT(adc_value_0) * 4, true, time_now);
+                    send_voltage(ADC_VALUE_TO_MILLIVOLT(adc_value_0) * 4, adc_voltage_id::V_BAT_PLUS, time_now);
                     SET_ADMUX(1);
                     // Start ADC conversion
                     ADCSRA |= _BV(ADSC);
@@ -491,7 +496,7 @@ int main()
                     const uint16_t adc_value_1 = ((uint16_t)ADCH << 8) | ADCL;
                     adc_state = adc_state_t::IDLE;
 
-                    send_voltage(ADC_VALUE_TO_MILLIVOLT(adc_value_1) * 4, false, time_now);
+                    send_voltage(ADC_VALUE_TO_MILLIVOLT(adc_value_1) * 4, adc_voltage_id::V_BAT_MINUS, time_now);
                 }
                 break;
         }
