@@ -213,17 +213,6 @@ Wire Wire Line
 	5700 1150 5250 1150
 Connection ~ 5250 1150
 $Comp
-L MCU_Microchip_ATmega:ATmega328P-PU U7
-U 1 1 5D39FAEE
-P 8300 2350
-F 0 "U7" H 8800 900 50  0000 R CNN
-F 1 "ATmega328P-PU" H 8550 2350 50  0000 R CNN
-F 2 "Package_DIP:DIP-28_W7.62mm" H 8300 2350 50  0001 C CIN
-F 3 "http://ww1.microchip.com/downloads/en/DeviceDoc/ATmega328_P%20AVR%20MCU%20with%20picoPower%20Technology%20Data%20Sheet%2040001984A.pdf" H 8300 2350 50  0001 C CNN
-	1    8300 2350
-	-1   0    0    -1  
-$EndComp
-$Comp
 L power:+5VA #PWR0107
 U 1 1 5D3A1385
 P 8200 700
@@ -385,8 +374,8 @@ $Comp
 L Connector:AVR-ISP-6 J4
 U 1 1 5D3AEC0C
 P 10500 1200
-F 0 "J4" H 10221 1296 50  0000 R CNN
-F 1 "AVR-ISP-6" H 10221 1205 50  0000 R CNN
+F 0 "J4" H 10171 1296 50  0000 R CNN
+F 1 "AVR-ISP-6" H 10171 1205 50  0000 R CNN
 F 2 "Connector_IDC:IDC-Header_2x03_P2.54mm_Vertical" V 10250 1250 50  0001 C CNN
 F 3 " ~" H 9225 650 50  0001 C CNN
 	1    10500 1200
@@ -1497,4 +1486,15 @@ Wire Wire Line
 Connection ~ 8250 5250
 Text Notes 3050 1800 0    31   ~ 0
 Vout - 2.5V = 20 * Ishunt * Rshunt\nSee AD8210 datasheet\n"Splitting an external reference"
+$Comp
+L MCU_Microchip_ATmega:ATmega328P-PU U7
+U 1 1 5D39FAEE
+P 8300 2350
+F 0 "U7" H 8800 900 50  0000 R CNN
+F 1 "ATmega328P-PU" H 8550 2350 50  0000 R CNN
+F 2 "Package_DIP:DIP-28_W7.62mm" H 8300 2350 50  0001 C CIN
+F 3 "http://ww1.microchip.com/downloads/en/DeviceDoc/ATmega328_P%20AVR%20MCU%20with%20picoPower%20Technology%20Data%20Sheet%2040001984A.pdf" H 8300 2350 50  0001 C CNN
+	1    8300 2350
+	-1   0    0    -1  
+$EndComp
 $EndSCHEMATC
