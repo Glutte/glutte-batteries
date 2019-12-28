@@ -22,6 +22,8 @@
  * SOFTWARE.
 */
 
+#include "config.h"
+
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -404,7 +406,7 @@ int main()
         // One second blink interval
         pins_set_status(time_now.seconds_ % 2 == 0);
 
-#if 0
+#if ENABLE_STORE_TO_EEPROM
         /* EEPROM has an endurance of at least 100'000 write/erase cycles.
          * (Datasheet 8.4 EEPROM Data Memory)
          * Storing every five hours gives us several years of endurance.

@@ -23,6 +23,7 @@ BUILD_DIR=build
 APP_NAME = sw
 
 HEADERS = \
+		  config.h \
 		  pins.hpp \
 		  common.hpp \
 		  relays.hpp \
