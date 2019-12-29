@@ -109,7 +109,7 @@ const uint32_t V_REF_mV = 5000;
 #define ADC_VALUE_TO_MILLIVOLT(val) ((uint32_t)val * V_REF_mV) / (uint32_t)(1<<10)
 
 // Use the LDO on Vref as ADC reference, set REFS1..REFS0 = 0b00, and ADC input 0
-#define SET_ADMUX(input) ADMUX = _BV(REFS0) | _BV(REFS1) | input
+#define SET_ADMUX(input) ADMUX = (input & 0x0F)
 
 /* Timer at approximately 100ms.
  *
