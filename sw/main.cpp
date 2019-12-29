@@ -475,7 +475,10 @@ int main()
                 // ADSC is cleared when the conversion finishes
                 if ((ADCSRA & ADSC) == 0) {
                     // BAT+
-                    const uint16_t adc_value_0 = ((uint16_t)ADCH << 8) | ADCL;
+
+                    // Datasheet 24.9.3 says ADCL must be read first
+                    const uint8_t adcl = ADCL;
+                    const uint16_t adc_value_0 = ((uint16_t)ADCH << 8) | adcl;
                     send_voltage(ADC_VALUE_TO_MILLIVOLT(adc_value_0) * 4, true, time_now);
                     SET_ADMUX(1);
                     // Start ADC conversion
@@ -488,7 +491,8 @@ int main()
                 // ADSC is cleared when the conversion finishes
                 if ((ADCSRA & ADSC) == 0) {
                     // BAT-
-                    const uint16_t adc_value_1 = ((uint16_t)ADCH << 8) | ADCL;
+                    const uint8_t adcl = ADCL;
+                    const uint16_t adc_value_1 = ((uint16_t)ADCH << 8) | adcl;
                     adc_state = adc_state_t::IDLE;
 
                     send_voltage(ADC_VALUE_TO_MILLIVOLT(adc_value_1) * 4, false, time_now);
