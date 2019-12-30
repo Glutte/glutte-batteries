@@ -111,7 +111,7 @@ const uint32_t V_REF_mV = 5000;
 #define ADC_VALUE_TO_MILLIVOLT(val) ((uint32_t)val * V_REF_mV) / (uint32_t)(1<<10)
 
 // Use the LDO on Vref as ADC reference, set REFS1..REFS0 = 0b00, and ADC input 0
-#define SET_ADMUX(input) ADMUX = _BV(REFS0) | _BV(REFS1) | input
+#define SET_ADMUX(input) ADMUX = (input & 0x0F)
 
 /* Timer at approximately 100ms.
  *
@@ -482,7 +482,10 @@ int main()
                 // ADSC is cleared when the conversion finishes
                 if ((ADCSRA & ADSC) == 0) {
                     // BAT+
-                    const uint16_t adc_value_0 = ((uint16_t)ADCH << 8) | ADCL;
+
+                    // Datasheet 24.9.3 says ADCL must be read first
+                    const uint8_t adcl = ADCL;
+                    const uint16_t adc_value_0 = ((uint16_t)ADCH << 8) | adcl;
                     send_voltage(ADC_VALUE_TO_MILLIVOLT(adc_value_0) * 4, adc_voltage_id::V_BAT_PLUS, time_now);
                     SET_ADMUX(1);
                     // Start ADC conversion
@@ -495,7 +498,8 @@ int main()
                 // ADSC is cleared when the conversion finishes
                 if ((ADCSRA & ADSC) == 0) {
                     // BAT-
-                    const uint16_t adc_value_1 = ((uint16_t)ADCH << 8) | ADCL;
+                    const uint8_t adcl = ADCL;
+                    const uint16_t adc_value_1 = ((uint16_t)ADCH << 8) | adcl;
                     adc_state = adc_state_t::IDLE;
 
                     send_voltage(ADC_VALUE_TO_MILLIVOLT(adc_value_1) * 4, adc_voltage_id::V_BAT_MINUS, time_now);
