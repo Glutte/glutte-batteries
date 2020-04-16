@@ -438,10 +438,12 @@ int main()
                 const double i_shunt = (adc_voltage - 2.5) / (20.0 * R_SHUNT);
                 capacity_accum += i_shunt * ltc2400_measure_interval.microsecs_ * 1e-6;
 
+#if DEBUG_MEASUREMENT
                 snprintf(timestamp_buf, sizeof(timestamp_buf), "DBG,%ldmV,%ldmA" ENDL,
                         lrint((adc_voltage - 2.5) * 1e3),
                         lrint(i_shunt * 1e3));
                 uart_puts(timestamp_buf);
+#endif
 
                 if (capacity_accum < 0) { capacity_accum = 0; }
                 if (capacity_accum > MAX_CAPACITY) { capacity_accum = MAX_CAPACITY; }
