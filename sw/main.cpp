@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2019 Matthias P. Braendli
+ * Copyright (c) 2020 Matthias P. Braendli
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -439,7 +439,7 @@ int main()
                 capacity_accum += i_shunt * ltc2400_measure_interval.microsecs_ * 1e-6;
 
                 snprintf(timestamp_buf, sizeof(timestamp_buf), "DBG,%ldmV,%ldmA" ENDL,
-                        lrint(adc_voltage * 1e3),
+                        lrint((adc_voltage - 2.5) * 1e3),
                         lrint(i_shunt * 1e3));
                 uart_puts(timestamp_buf);
 

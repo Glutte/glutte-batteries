@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2019 Matthias P. Braendli
+ * Copyright (c) 2020 Matthias P. Braendli
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -37,7 +37,8 @@ struct pending_event_t {
 
 static constexpr uint32_t RELAY_SIGNAL_HOLD_TIME_US = 400000uL;
 
-static constexpr size_t PENDING_EVENTS_SIZE = 8;
+static constexpr size_t NUM_RELAYS = 3;
+static constexpr size_t PENDING_EVENTS_SIZE = NUM_RELAYS * 2; // two events per relay at most
 
 static pending_event_t pending_events[PENDING_EVENTS_SIZE];
 
