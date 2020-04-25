@@ -68,7 +68,8 @@ constexpr double THRESHOLD_K1_DOWN = 1200.0 * 3600 - THRESHOLD_HYSTERESIS;
 constexpr double THRESHOLD_K2_DOWN = 1000.0 * 3600 - THRESHOLD_HYSTERESIS;
 constexpr double THRESHOLD_K3_DOWN = 600.0 * 3600 - THRESHOLD_HYSTERESIS;
 
-constexpr double MAX_CAPACITY = 1500.0 * 3600;
+constexpr uint32_t MAX_CAPACITY = 1500uL * 3600uL; // As
+
 static uint32_t current_capacity;
 static uint32_t previous_capacity;
 static bool relay_state_known = false;
@@ -138,6 +139,15 @@ static timer_t system_timer;
  * Datasheet 11.9.1, example code from wdt.h */
 uint8_t mcusr_mirror __attribute__ ((section (".noinit")));
 
+// Convert from As to mAh
+inline uint32_t As_to_mAh(uint32_t value)
+{
+    float cap = value;
+    cap /= 3600.0f;
+    cap *= 1000.0f;
+    return lrintf(cap);
+}
+
 ISR(TIMER0_OVF_vect)
 {
     system_timer += timer_t{0, TIMER_TICK_INTERVAL_US};
@@ -154,6 +164,37 @@ enum class error_type_t {
 };
 
 static void flag_error(const error_type_t e);
+
+static char timestamp_buf[32];
+static void send_message(const char *message)
+{
+    snprintf(timestamp_buf, sizeof(timestamp_buf), "TEXT,%ld,", system_timer.get_seconds_atomic());
+    uart_puts(timestamp_buf);
+    uart_puts(message);
+    uart_puts_P(ENDL);
+}
+
+#define send_debug(x) send_message(x)
+
+static void send_capacity(uint32_t capacity, const timer_t& time)
+{
+    snprintf(timestamp_buf, sizeof(timestamp_buf), "CAPA,%ld,%ld" ENDL, time.get_seconds_atomic(), capacity);
+    uart_puts(timestamp_buf);
+}
+
+enum class adc_voltage_id {
+    V_BAT_PLUS,
+    V_BAT_MINUS,
+};
+
+static void send_voltage(uint32_t millivolts, adc_voltage_id voltage_id, const timer_t& time)
+{
+    snprintf(timestamp_buf, sizeof(timestamp_buf), "VBAT%c,%ld,%ld" ENDL,
+            voltage_id == adc_voltage_id::V_BAT_PLUS ? '+' : '-',
+            time.get_seconds_atomic(), millivolts);
+    uart_puts(timestamp_buf);
+}
+
 
 static void load_capacity_from_eeprom()
 {
@@ -185,6 +226,11 @@ static void load_capacity_from_eeprom()
     else {
         flag_error(error_type_t::EEPROM_READ_ERROR);
         current_capacity = cap2; // arbitrary
+    }
+
+    if (current_capacity == 0xFFffFFff) {
+        /* EEPROM does not contain a valid value */
+        current_capacity = MAX_CAPACITY;
     }
 
     previous_capacity = current_capacity;
@@ -222,26 +268,32 @@ static void handle_thresholds(const timer_t& time_now)
         bool success = true;
 
         if (previous_capacity < THRESHOLD_K1_UP and current_capacity >= THRESHOLD_K1_UP) {
+            send_message("K1 reset");
             success &= relays_toggle(relay_id_t::K1, false, time_now);
         }
 
         if (previous_capacity > THRESHOLD_K1_DOWN and current_capacity <= THRESHOLD_K1_DOWN) {
+            send_message("K1 set");
             success &= relays_toggle(relay_id_t::K1, true, time_now);
         }
 
         if (previous_capacity < THRESHOLD_K2_UP and current_capacity >= THRESHOLD_K2_UP) {
+            send_message("K2 reset");
             success &= relays_toggle(relay_id_t::K2, false, time_now);
         }
 
         if (previous_capacity > THRESHOLD_K2_DOWN and current_capacity <= THRESHOLD_K2_DOWN) {
+            send_message("K2 set");
             success &= relays_toggle(relay_id_t::K2, true, time_now);
         }
 
         if (previous_capacity < THRESHOLD_K3_UP and current_capacity >= THRESHOLD_K3_UP) {
+            send_message("K3 reset");
             success &= relays_toggle(relay_id_t::K3, false, time_now);
         }
 
         if (previous_capacity > THRESHOLD_K3_DOWN and current_capacity <= THRESHOLD_K3_DOWN) {
+            send_message("K3 set");
             success &= relays_toggle(relay_id_t::K3, true, time_now);
         }
 
@@ -251,36 +303,6 @@ static void handle_thresholds(const timer_t& time_now)
     }
 
     previous_capacity = current_capacity;
-}
-
-static char timestamp_buf[32];
-static void send_message(const char *message)
-{
-    snprintf(timestamp_buf, sizeof(timestamp_buf), "TEXT,%ld,", system_timer.get_seconds_atomic());
-    uart_puts(timestamp_buf);
-    uart_puts(message);
-    uart_puts_P(ENDL);
-}
-
-#define send_debug(x) send_message(x)
-
-static void send_capacity(uint32_t capacity, const timer_t& time)
-{
-    snprintf(timestamp_buf, sizeof(timestamp_buf), "CAPA,%ld,%ld" ENDL, time.get_seconds_atomic(), capacity);
-    uart_puts(timestamp_buf);
-}
-
-enum class adc_voltage_id {
-    V_BAT_PLUS,
-    V_BAT_MINUS,
-};
-
-static void send_voltage(uint32_t millivolts, adc_voltage_id voltage_id, const timer_t& time)
-{
-    snprintf(timestamp_buf, sizeof(timestamp_buf), "VBAT%c,%ld,%ld" ENDL,
-            voltage_id == adc_voltage_id::V_BAT_PLUS ? '+' : '-',
-            time.get_seconds_atomic(), millivolts);
-    uart_puts(timestamp_buf);
 }
 
 static void flag_error(const error_type_t e)
@@ -370,7 +392,10 @@ int main()
     /* Load capacity stored in EEPROM */
     current_capacity = 0;
     load_capacity_from_eeprom();
-    send_debug("Load from EEPROM done");
+
+    snprintf(timestamp_buf, sizeof(timestamp_buf), "TEXT,%d,Load EEPROM %lu" ENDL, 0, As_to_mAh(current_capacity));
+    uart_puts(timestamp_buf);
+
     last_ltc2400_measure = system_timer;
 
     last_store_time_seconds =
@@ -464,7 +489,7 @@ int main()
         constexpr auto ltc2400_print_interval_s = 10;
         if (last_ltc2400_print_time_seconds + ltc2400_print_interval_s < time_now.seconds_) {
             last_ltc2400_print_time_seconds += ltc2400_print_interval_s;
-            send_capacity(current_capacity, time_now);
+            send_capacity(As_to_mAh(current_capacity), time_now);
         }
 
         // Input is divided by 4 by LM324. ADC is 10-bit,
