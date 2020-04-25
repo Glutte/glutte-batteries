@@ -421,15 +421,14 @@ int main()
 
     send_debug("Sleep configured");
     while (true) {
+        pins_set_status(false);
         sleep_mode();
         wdt_reset();
+        pins_set_status(true);
 
         /* In every loop, access the system_timer only once, so that
          * every loop has a well-defined time */
         const auto time_now = system_timer.get_atomic_copy();
-
-        // One second blink interval
-        pins_set_status(time_now.seconds_ % 2 == 0);
 
 #if ENABLE_STORE_TO_EEPROM
         /* EEPROM has an endurance of at least 100'000 write/erase cycles.
