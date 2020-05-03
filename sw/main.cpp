@@ -55,18 +55,18 @@ constexpr double R_SHUNT = 1e-3; // Ohm
  * For every relay, define a threshold below which the
  * relay should be active.
  */
-constexpr double THRESHOLD_K1 = 1200.0 * 3600;
-constexpr double THRESHOLD_K2 = 1000.0 * 3600;
-constexpr double THRESHOLD_K3 = 600.0 * 3600;
-constexpr double THRESHOLD_HYSTERESIS = 10.0 * 3600;
+constexpr double THRESHOLD_K1 = 1550.0 * 3600;
+constexpr double THRESHOLD_K2 = 1300.0 * 3600;
+constexpr double THRESHOLD_K3 = 800.0 * 3600;
+constexpr double THRESHOLD_HYSTERESIS = 50.0 * 3600;
 
-constexpr double THRESHOLD_K1_UP = 1200.0 * 3600 + THRESHOLD_HYSTERESIS;
-constexpr double THRESHOLD_K2_UP = 1000.0 * 3600 + THRESHOLD_HYSTERESIS;
-constexpr double THRESHOLD_K3_UP = 600.0 * 3600 + THRESHOLD_HYSTERESIS;
+constexpr double THRESHOLD_K1_UP = THRESHOLD_K1 + THRESHOLD_HYSTERESIS;
+constexpr double THRESHOLD_K2_UP = THRESHOLD_K2 + THRESHOLD_HYSTERESIS;
+constexpr double THRESHOLD_K3_UP = THRESHOLD_K3 + THRESHOLD_HYSTERESIS;
 
-constexpr double THRESHOLD_K1_DOWN = 1200.0 * 3600 - THRESHOLD_HYSTERESIS;
-constexpr double THRESHOLD_K2_DOWN = 1000.0 * 3600 - THRESHOLD_HYSTERESIS;
-constexpr double THRESHOLD_K3_DOWN = 600.0 * 3600 - THRESHOLD_HYSTERESIS;
+constexpr double THRESHOLD_K1_DOWN = THRESHOLD_K1;
+constexpr double THRESHOLD_K2_DOWN = THRESHOLD_K2;
+constexpr double THRESHOLD_K3_DOWN = THRESHOLD_K3;
 
 constexpr uint32_t MAX_CAPACITY = 1650uL * 3600uL; // As
 
