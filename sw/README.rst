@@ -25,6 +25,7 @@ secondes, une virgule, un champ de données, et termine par CR LF.
 | `TEXT`             | Un message informatif             |
 | `ERROR`            | Erreur ou avertissement           |
 | `CAPA`             | Une valeur en mAh                 |
+| `RELAY`            | Etats des trois relais, ON ou OFF |
 | `VBAT+`            | Une valeur en mV                  |
 | `VBAT-`            | Une valeur en mV                  |
 +--------------------+-----------------------------------+

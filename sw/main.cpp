@@ -73,6 +73,9 @@ constexpr uint32_t MAX_CAPACITY = 1650uL * 3600uL; // As
 static uint32_t current_capacity;
 static uint32_t previous_capacity;
 static bool relay_state_known = false;
+static bool relay_k1_set = false;
+static bool relay_k2_set = false;
+static bool relay_k3_set = false;
 
 /* Storage of battery capacity in mC.
  * 3600 mC = 1mAh */
@@ -89,7 +92,7 @@ uint32_t EEMEM stored_capacity3;
  */
 static uint32_t last_store_time_seconds;
 static uint32_t last_threshold_calculation_seconds;
-static uint32_t last_ltc2400_print_time_seconds;
+static uint32_t last_status_print_seconds;
 static timer_t last_ltc2400_measure;
 
 enum class adc_state_t {
@@ -176,6 +179,16 @@ static void send_message(const char *message)
 
 #define send_debug(x) send_message(x)
 
+static void send_relay_states(const timer_t& time)
+{
+    snprintf(timestamp_buf, sizeof(timestamp_buf), "RELAY,%ld,%s,%s,%s" ENDL,
+            time.get_seconds_atomic(),
+            relay_k1_set ? "On" : "Off",
+            relay_k2_set ? "On" : "Off",
+            relay_k3_set ? "On" : "Off");
+    uart_puts(timestamp_buf);
+}
+
 static void send_capacity(uint32_t capacity, const timer_t& time)
 {
     snprintf(timestamp_buf, sizeof(timestamp_buf), "CAPA,%ld,%ld" ENDL, time.get_seconds_atomic(), capacity);
@@ -255,9 +268,13 @@ static void handle_thresholds(const timer_t& time_now)
         /* At bootup, ignore hysteresis. Put all relays in the state defined by the
          * thresholds.
          */
-        bool success = relays_toggle(relay_id_t::K1, current_capacity < THRESHOLD_K1, time_now);
-        success &= relays_toggle(relay_id_t::K2, current_capacity < THRESHOLD_K2, time_now);
-        success &= relays_toggle(relay_id_t::K3, current_capacity < THRESHOLD_K3, time_now);
+        relay_k1_set = current_capacity < THRESHOLD_K1;
+        relay_k2_set = current_capacity < THRESHOLD_K2;
+        relay_k3_set = current_capacity < THRESHOLD_K3;
+
+        bool success = relays_toggle(relay_id_t::K1, relay_k1_set, time_now);
+        success &= relays_toggle(relay_id_t::K2, relay_k2_set, time_now);
+        success &= relays_toggle(relay_id_t::K3, relay_k3_set, time_now);
         relay_state_known = success;
 
         if (not success) {
@@ -268,32 +285,32 @@ static void handle_thresholds(const timer_t& time_now)
         bool success = true;
 
         if (previous_capacity < THRESHOLD_K1_UP and current_capacity >= THRESHOLD_K1_UP) {
-            send_message("K1 reset");
+            relay_k1_set = false;
             success &= relays_toggle(relay_id_t::K1, false, time_now);
         }
 
         if (previous_capacity > THRESHOLD_K1_DOWN and current_capacity <= THRESHOLD_K1_DOWN) {
-            send_message("K1 set");
+            relay_k1_set = true;
             success &= relays_toggle(relay_id_t::K1, true, time_now);
         }
 
         if (previous_capacity < THRESHOLD_K2_UP and current_capacity >= THRESHOLD_K2_UP) {
-            send_message("K2 reset");
+            relay_k2_set = false;
             success &= relays_toggle(relay_id_t::K2, false, time_now);
         }
 
         if (previous_capacity > THRESHOLD_K2_DOWN and current_capacity <= THRESHOLD_K2_DOWN) {
-            send_message("K2 set");
+            relay_k2_set = true;
             success &= relays_toggle(relay_id_t::K2, true, time_now);
         }
 
         if (previous_capacity < THRESHOLD_K3_UP and current_capacity >= THRESHOLD_K3_UP) {
-            send_message("K3 reset");
+            relay_k3_set = false;
             success &= relays_toggle(relay_id_t::K3, false, time_now);
         }
 
         if (previous_capacity > THRESHOLD_K3_DOWN and current_capacity <= THRESHOLD_K3_DOWN) {
-            send_message("K3 set");
+            relay_k3_set = true;
             success &= relays_toggle(relay_id_t::K3, true, time_now);
         }
 
@@ -399,7 +416,7 @@ int main()
     last_ltc2400_measure = system_timer;
 
     last_store_time_seconds =
-        last_ltc2400_print_time_seconds =
+        last_status_print_seconds =
         last_adc_measure_time_seconds =
         last_threshold_calculation_seconds = system_timer.get_seconds_atomic();
 
@@ -485,10 +502,11 @@ int main()
             handle_thresholds(time_now);
         }
 
-        constexpr auto ltc2400_print_interval_s = 10;
-        if (last_ltc2400_print_time_seconds + ltc2400_print_interval_s < time_now.seconds_) {
-            last_ltc2400_print_time_seconds += ltc2400_print_interval_s;
+        constexpr auto status_print_interval = 10;
+        if (last_status_print_seconds + status_print_interval < time_now.seconds_) {
+            last_status_print_seconds += status_print_interval;
             send_capacity(As_to_mAh(current_capacity), time_now);
+            send_relay_states(time_now);
         }
 
         // Input is divided by 4 by LM324. ADC is 10-bit,
