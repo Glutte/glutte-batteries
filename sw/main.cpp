@@ -69,7 +69,7 @@ constexpr double THRESHOLD_K2_DOWN = THRESHOLD_K2;
 constexpr double THRESHOLD_K3_DOWN = THRESHOLD_K3;
 
 constexpr uint32_t MAX_CAPACITY = 1650uL * 3600uL; // As
-constexpr uint32_t STARTUP_CAPACITY = 1023uL * 3600uL; // As
+constexpr uint32_t STARTUP_CAPACITY = 1000uL * 3600uL; // As
 
 static uint32_t current_capacity;
 static uint32_t previous_capacity;
