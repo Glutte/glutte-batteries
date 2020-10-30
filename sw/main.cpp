@@ -69,6 +69,7 @@ constexpr double THRESHOLD_K2_DOWN = THRESHOLD_K2;
 constexpr double THRESHOLD_K3_DOWN = THRESHOLD_K3;
 
 constexpr uint32_t MAX_CAPACITY = 1650uL * 3600uL; // As
+constexpr uint32_t STARTUP_CAPACITY = 1023uL * 3600uL; // As
 
 static uint32_t current_capacity;
 static uint32_t previous_capacity;
@@ -93,6 +94,7 @@ uint32_t EEMEM stored_capacity3;
 static uint32_t last_store_time_seconds;
 static uint32_t last_threshold_calculation_seconds;
 static uint32_t last_status_print_seconds;
+static uint32_t last_disjoncteur_print_seconds;
 static timer_t last_ltc2400_measure;
 
 enum class adc_state_t {
@@ -208,6 +210,14 @@ static void send_voltage(uint32_t millivolts, adc_voltage_id voltage_id, const t
     uart_puts(timestamp_buf);
 }
 
+static void send_disjoncteur_state(bool state, const timer_t& time)
+{
+    snprintf(timestamp_buf, sizeof(timestamp_buf), "DISJEOL,%ld,%s" ENDL,
+            time.get_seconds_atomic(),
+            state ? "On" : "Off");
+    uart_puts(timestamp_buf);
+}
+
 
 static void load_capacity_from_eeprom()
 {
@@ -243,7 +253,7 @@ static void load_capacity_from_eeprom()
 
     if (current_capacity == 0xFFffFFff) {
         /* EEPROM does not contain a valid value */
-        current_capacity = MAX_CAPACITY;
+        current_capacity = STARTUP_CAPACITY;
     }
 
     previous_capacity = current_capacity;
@@ -404,6 +414,12 @@ int main()
         send_message("Startup");
     }
 
+#if 0
+    current_capacity = 1023uL * 3600uL;
+    store_capacity_to_eeprom();
+    while (true) {}
+#endif
+
     system_timer = timer_t(0, 0);
 
     /* Load capacity stored in EEPROM */
@@ -417,6 +433,7 @@ int main()
 
     last_store_time_seconds =
         last_status_print_seconds =
+        last_disjoncteur_print_seconds =
         last_adc_measure_time_seconds =
         last_threshold_calculation_seconds = system_timer.get_seconds_atomic();
 
@@ -549,6 +566,12 @@ int main()
                     send_voltage(ADC_VALUE_TO_MILLIVOLT(adc_value_1) * 4, adc_voltage_id::V_BAT_MINUS, time_now);
                 }
                 break;
+        }
+
+        constexpr auto disjoncteur_measure_interval = 60;
+        if (last_disjoncteur_print_seconds + disjoncteur_measure_interval < time_now.seconds_) {
+            last_disjoncteur_print_seconds += disjoncteur_measure_interval;
+            send_disjoncteur_state(pins_read_disjoncteur_eolienne(), time_now);
         }
 
         relays_handle(time_now);

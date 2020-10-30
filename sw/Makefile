@@ -128,6 +128,16 @@ fuse:
 interactive:
 	$(AVRDUDE) $(AVRDUDE_FLAGS) -c $(PROG) -P $(AVRDUDE_DEV) -p $(AVRDUDE_PART) -t -v
 
+program_pp: $(APP_HEX)
+	$(SIZE) -C $(BUILD_DIR)/$(APP_ELF)
+	$(AVRDUDE) $(AVRDUDE_FLAGS) -c dragon_pp -P $(AVRDUDE_DEV) -p $(AVRDUDE_PART) -U flash:w:$(BUILD_DIR)/$(APP_HEX) -v
+
+fuse_pp:
+	$(AVRDUDE) $(AVRDUDE_FLAGS) -c dragon_pp -P $(AVRDUDE_DEV) -p $(AVRDUDE_PART) -U lfuse:w:0x7e:m -U hfuse:w:0xd9:m -U efuse:w:0xfc:m -v
+
+interactive_pp:
+	$(AVRDUDE) $(AVRDUDE_FLAGS) -c dragon_pp -P $(AVRDUDE_DEV) -p $(AVRDUDE_PART) -t -v
+
 help:
 	@echo "targets: all, program, fuse, interactive"
 

@@ -69,3 +69,10 @@ Risque de gel: Une batterie profondément déchargée risque le gel!
 +---------+---------------+------------------------+--------------------+
 | 30 à 32 | 1.262 à 1.285 | Pleine                 | plus bas que -52C  |
 +---------+---------------+------------------------+--------------------+
+
+Composants
+----------
+
+Boitier: Hammond RZ0214C
+
+Shunt: muRata 3020-01096-0

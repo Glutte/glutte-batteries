@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2019 Matthias P. Braendli
+ * Copyright (c) 2020 Matthias P. Braendli
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -70,7 +70,7 @@ constexpr uint8_t PINC_INIT = 0;
 constexpr uint8_t PIND_UART_RX = _BV(0);
 constexpr uint8_t PIND_UART_TX = _BV(1);
 
-constexpr uint8_t PIND_ONEWIRE = _BV(4); // with exteral pullup
+constexpr uint8_t PIND_DISJONCTEUR_EOLIENNE = _BV(4); // with exteral 4k7 pullup
 
 constexpr uint8_t PIND_K1_RESET = _BV(5);
 constexpr uint8_t PIND_K1_SET = _BV(6);
@@ -91,3 +91,9 @@ inline void pins_set_status(bool enable)
     }
 }
 
+/* True = breaker is closed, wind generator is connected. */
+inline bool pins_read_disjoncteur_eolienne()
+{
+    /* Breaker closed means auxiliary closed, measure low voltage */
+    return not(PIND & PIND_DISJONCTEUR_EOLIENNE);
+}
