@@ -130,9 +130,9 @@ const uint32_t V_REF_mV = 5000;
  * interval [s] = overflow [ticks] / (F_CPU [ticks/s] / prescaler [unit-less])
  *              = 99.84 ms
  */
-constexpr uint8_t TIMER_OVERFLOW = (uint8_t)(F_CPU / 1024 / 10);
-constexpr double TIMER_TICK_INTERVAL = (double)TIMER_OVERFLOW / ((double)F_CPU / 1024.0); // == 0.099840 s
-constexpr uint32_t TIMER_TICK_INTERVAL_US = (uint32_t)(TIMER_TICK_INTERVAL * 1000000.0);
+constexpr uint8_t TIMER_OVERFLOW = (uint8_t)(F_CPU / 1024 / 10); // 2e6 / 1024 / 10 = 195.3125
+constexpr double TIMER_TICK_INTERVAL = (double)TIMER_OVERFLOW / ((double)F_CPU / 1024.0); // 195 / (2e6 / 1024) = 99.84ms
+constexpr uint32_t TIMER_TICK_INTERVAL_US = (uint32_t)(TIMER_TICK_INTERVAL * 1e6);
 
 /* Since this timer is updated in an ISR, care has to be taken
  * when reading it, because all operations involving variables
@@ -153,7 +153,7 @@ inline uint32_t As_to_mAh(uint32_t value)
     return lrintf(cap);
 }
 
-ISR(TIMER0_OVF_vect)
+ISR(TIMER0_COMPA_vect)
 {
     system_timer += timer_t{0, TIMER_TICK_INTERVAL_US};
 }
@@ -440,8 +440,8 @@ int main()
     adc_state = adc_state_t::IDLE;
 
     /* Enable timer and interrupts */
-    TCCR0B |= _BV(WGM02); // Set timer mode to CTC (datasheet 15.7.2)
-    TIMSK0 |= _BV(TOIE0); // enable overflow interrupt
+    TCCR0A |= _BV(WGM01); // Set timer mode to CTC (datasheet 15.7.2)
+    TIMSK0 |= _BV(OCIE0A); // enable overflow interrupt
     OCR0A = TIMER_OVERFLOW;
     TCCR0B |= _BV(CS02) | _BV(CS00); // Start timer at Fcpu/1024
     sei();
